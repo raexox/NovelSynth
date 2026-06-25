@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { StoreProvider, useStore } from './store';
 import { LeftSidebar } from './components/LeftSidebar';
 import { Editor } from './components/Editor';
@@ -30,7 +30,16 @@ const WorkspaceShell: React.FC = () => {
   // Settings Form Inputs
   const [apiKey, setApiKey] = useState(project.settings.apiKey);
   const [model, setModel] = useState(project.settings.model);
+  const [provider, setProvider] = useState(project.settings.provider);
   const [aiTemp, setAiTemp] = useState(project.settings.aiTemperature);
+
+  // Sync state with store updates
+  useEffect(() => {
+    setApiKey(project.settings.apiKey);
+    setModel(project.settings.model);
+    setProvider(project.settings.provider);
+    setAiTemp(project.settings.aiTemperature);
+  }, [project.settings]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -54,6 +63,7 @@ const WorkspaceShell: React.FC = () => {
     updateSettings({
       apiKey,
       model,
+      provider,
       aiTemperature: aiTemp
     });
     setShowSettings(false);
@@ -212,16 +222,36 @@ const WorkspaceShell: React.FC = () => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">API Selection</label>
+              <label className="form-label">API Provider</label>
               <select 
                 className="form-select" 
+                value={provider} 
+                onChange={e => {
+                  const val = e.target.value as 'gemini' | 'openai' | 'openrouter';
+                  setProvider(val);
+                  if (val === 'gemini') setModel('gemini-1.5-flash');
+                  else if (val === 'openai') setModel('gpt-4o-mini');
+                  else if (val === 'openrouter') setModel('google/gemini-2.5-flash');
+                }}
+              >
+                <option value="gemini">Gemini API</option>
+                <option value="openai">OpenAI API</option>
+                <option value="openrouter">OpenRouter API</option>
+              </select>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">Model Identifier</label>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="e.g. gpt-4o-mini, gemini-1.5-flash..." 
                 value={model} 
                 onChange={e => setModel(e.target.value)}
-              >
-                <option value="Gemini 3.5 Flash">Gemini 3.5 Flash (Default Simulator)</option>
-                <option value="Gemini 3.5 Pro">Gemini 3.5 Pro</option>
-                <option value="GPT-4o">GPT-4o</option>
-              </select>
+              />
+              <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
+                OpenAI defaults: <code>gpt-4o</code>, <code>gpt-4o-mini</code>. Gemini: <code>gemini-1.5-flash</code>, <code>gemini-1.5-pro</code>. OpenRouter: <code>google/gemini-2.5-flash</code>.
+              </span>
             </div>
 
             <div className="form-group">
@@ -234,7 +264,7 @@ const WorkspaceShell: React.FC = () => {
                 onChange={e => setApiKey(e.target.value)}
               />
               <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                Optional. By default, the application runs a local AI simulation framework that matches the Story Bible context.
+                Required. AI scans require a valid API key from your selected provider.
               </span>
             </div>
 

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../store';
 import { 
   Sparkles, ShieldCheck, UserCheck, MessageSquare, ListFilter, 
-  HelpCircle, Check, X, Search, Loader2, BookOpen 
+  HelpCircle, Check, X, Search, Loader2, BookOpen, AlertTriangle 
 } from 'lucide-react';
 
 export const RightSidebar: React.FC = () => {
@@ -24,7 +24,9 @@ export const RightSidebar: React.FC = () => {
     runPacingAnalysis,
     runResearch,
     clearAISuggestions,
-    updateSceneContent
+    updateSceneContent,
+    aiError,
+    clearAIError
   } = useStore();
 
   const [revisionMode, setRevisionMode] = useState<'light' | 'style' | 'line' | 'dev'>('line');
@@ -113,6 +115,41 @@ export const RightSidebar: React.FC = () => {
       </div>
 
       <div className="sidebar-content" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* API Key Required Check */}
+        {!project.settings.apiKey && (
+          <div className="continuity-warning" style={{ borderLeftColor: 'var(--accent-gold)', backgroundColor: 'var(--accent-gold-dim)', marginBottom: 8 }}>
+            <div className="continuity-warning-title" style={{ color: 'var(--accent-gold)' }}>
+              <HelpCircle size={14} />
+              API Key Required
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 4 }}>
+              To activate AI tools, open Settings (⚙️ in the top header) and configure your API key for Gemini, OpenAI, or OpenRouter.
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic API Error Component */}
+        {aiError && (
+          <div className="continuity-warning" style={{ borderLeftColor: 'var(--color-danger)', backgroundColor: 'var(--color-danger-bg)', marginBottom: 8 }}>
+            <div className="continuity-warning-title" style={{ color: 'var(--color-danger)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <AlertTriangle size={14} />
+                <span>AI Service Error</span>
+              </div>
+              <button 
+                className="btn-icon" 
+                onClick={clearAIError} 
+                style={{ padding: 2, color: 'var(--color-danger)', background: 'none' }}
+                title="Dismiss Error"
+              >
+                <X size={12} />
+              </button>
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-primary)', marginTop: 6, lineHeight: 1.4 }}>
+              {aiError}
+            </div>
+          </div>
+        )}
         {/* ================= REVISION TAB ================= */}
         {activeRightTab === 'revision' && (
           <div>

@@ -2,6 +2,14 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { 
   ProjectState, Chapter, Scene, PlotThread, VersionSnapshot, Note, MemoryUpdate, SceneMetadata 
 } from '../types';
+import { 
+  getAIRevision, 
+  getAIContinuityCheck, 
+  getAIDialogueCheck, 
+  getAIPacingAnalysis, 
+  getAIResearch, 
+  getAIMemoryGeneration 
+} from '../services/aiService';
 
 // Default Sample Data to wow the user out-of-the-box
 const INITIAL_STATE: ProjectState = {
@@ -216,7 +224,8 @@ Wait, what if they search the canals? The Order controls the ports.`,
   ],
   settings: {
     apiKey: "",
-    model: "Gemini 3.5 Flash",
+    model: "gemini-1.5-flash",
+    provider: "gemini",
     aiTemperature: 0.7,
     typewriterMode: false,
     focusMode: false,
@@ -244,6 +253,8 @@ interface StoreContextType {
   pacingSuggestions: string[] | null;
   researchResults: string | null;
   pendingMemoryUpdate: MemoryUpdate | null;
+  aiError: string | null;
+  clearAIError: () => void;
 
   // Actions
   updateSceneContent: (id: string, content: string) => void;
@@ -315,6 +326,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [researchResults, setResearchResults] = useState<string | null>(null);
   const [activeContexts, setActiveContexts] = useState<string[]>([]);
   const [pendingMemoryUpdate, setPendingMemoryUpdate] = useState<MemoryUpdate | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
+
+  const clearAIError = () => setAiError(null);
 
   // Auto-Save
   useEffect(() => {
@@ -566,310 +580,162 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setPacingSuggestions(null);
     setResearchResults(null);
     setPendingMemoryUpdate(null);
+    setAiError(null);
   };
 
-  // AI Simulator Engines
-  const runAIRevision = (mode: 'light' | 'style' | 'line' | 'dev') => {
+  // AI Service Integrations (calling aiService.ts)
+  const runAIRevision = async (mode: 'light' | 'style' | 'line' | 'dev') => {
     if (!activeSceneId) return;
     const scene = project.scenes.find(s => s.id === activeSceneId);
     if (!scene) return;
 
     setAiRunning(true);
     setRevisionSuggestions(null);
+    setAiError(null);
 
-    setTimeout(() => {
-      let revised = scene.content;
-      let explanation = "";
-
-      if (mode === 'light') {
-        // Fix only spelling/grammar
-        revised = scene.content
-          .replace("Kaelen write a letter", "Kaelen wrote a letter")
-          .replace("Wait, what if they search", "Wait, what if they search")
-          .replace("swordsmanship , stealth", "swordsmanship, stealth")
-          .replace("devoid of the warmth", "devoid of the warmth");
-        explanation = "Light edit mode: Fixed minor punctuation spacing and resolved the subject-verb agreement issue without altering your voice.";
-      } else if (mode === 'style') {
-        // Style edits: rhythm & flow
-        revised = scene.content
-          .replace("The rain fell in sheets over the lower city, washing the grime of the blacksmith shops into the gutters.", "Rain sheeted over the lower city, washing charcoal dust and anvil grime straight into the overflowing gutters.")
-          .replace("Wait, what if they search the canals? The Order controls the ports.", "But searching the canals remained a lethal risk. The Order held the locks tight.");
-        explanation = "Style edit mode: Enhanced sensory details (charcoal dust, anvil grime) and elevated sentence structures for a punchier rhythm, while preserving Kaelen's anxiety.";
-      } else if (mode === 'line') {
-        // Line edit: polish prose, preserve voice
-        revised = scene.content
-          .replace("Wait, what if they search the canals? The Order controls the ports.", "And if they swept the canals? The Order held the locks like a vice. There would be no escape.")
-          .replace("Kaelen pulled his hood lower, ducking into an alleyway", "Kaelen dragged his sodden wool hood down to his chin, pressing into the narrow throat of an alleyway");
-        explanation = "Line edit mode: Tightened pacing by rendering actions with active verbs and intensifying the emotional stakes of the scene without introducing generic phrases.";
-      } else {
-        // Dev edit: suggestion only
-        explanation = "Developmental Analysis:\n- **Pacing**: The scene is currently tense but brief. Expanding Kaelen's physical reaction to the rain can ground the reader in the environment.\n- **Tension**: High, but we need to see Mira's internal conflict. Consider showing her fingers twitching on the hilt of her sword.\n- **Sensory Details**: The smell of coal smoke, the clinking of steel plate in the distance, and the slick mud underfoot could enrich the setting.";
-        revised = scene.content;
-      }
-
-      // Compute diff HTML simple simulation
-      let diffHtml = "";
-      if (revised === scene.content) {
-        diffHtml = `<div class="diff-no-change">No textual edits suggested. Check the developmental feedback below.</div>`;
-      } else {
-        // Basic diff simulator (adds highlight classes)
-        const wordsOrig = scene.content.split(' ');
-        const wordsRev = revised.split(' ');
-        let i = 0, j = 0;
-        while (i < wordsOrig.length || j < wordsRev.length) {
-          if (wordsOrig[i] === wordsRev[j]) {
-            diffHtml += (wordsOrig[i] || '') + ' ';
-            i++; j++;
-          } else {
-            // Found difference
-            let origChunk = "";
-            let revChunk = "";
-            while (wordsOrig[i] !== wordsRev[j] && (i < wordsOrig.length || j < wordsRev.length)) {
-              if (i < wordsOrig.length && wordsOrig[i] !== wordsRev[j]) {
-                origChunk += wordsOrig[i] + ' ';
-                i++;
-              }
-              if (j < wordsRev.length && wordsOrig[i] !== wordsRev[j]) {
-                revChunk += wordsRev[j] + ' ';
-                j++;
-              }
-            }
-            if (origChunk) diffHtml += `<span class="diff-delete">${origChunk.trim()}</span> `;
-            if (revChunk) diffHtml += `<span class="diff-insert">${revChunk.trim()}</span> `;
-          }
-        }
-      }
-
+    try {
+      const res = await getAIRevision(scene.content, mode, project.settings);
       setRevisionSuggestions({
-        original: scene.content,
-        revised,
-        explanation,
-        diffHtml
+        ...res,
+        original: scene.content
       });
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to generate AI revision suggestions.');
+    } finally {
       setAiRunning(false);
-    }, 1000);
+    }
   };
 
-  const runAIContinuityCheck = () => {
+  const runAIContinuityCheck = async () => {
     if (!activeSceneId) return;
     const scene = project.scenes.find(s => s.id === activeSceneId);
     if (!scene) return;
 
     setAiRunning(true);
     setContinuityWarnings(null);
+    setAiError(null);
 
-    setTimeout(() => {
-      const warnings = [];
-      const content = scene.content.toLowerCase();
-
-      // Look for Kaelen name and Aether rules
-      if (content.includes("kaelen") && content.includes("altar")) {
-        // Suppose there is a contradiction in Scene 1
-        if (scene.id === "sc-1" && scene.content.includes("creaked shut")) {
-          // No warning, matching perfectly
-        }
-      }
-
-      // Check for character appearance contradiction
-      if (scene.id === "sc-2" && scene.content.includes("black hair")) {
-        // Mira has black hair in bible. Perfect.
-      }
-
-      // Insert mock warning if user writes something contradicting the Story Bible
-      if (content.includes("blond") && content.includes("mira")) {
-        warnings.push({
-          title: "Appearance Contradiction",
-          content: "You described Mira with 'blond' hair in this scene, but her Story Bible profile states her hair is black.",
-          severity: "medium" as const
-        });
-      }
-
-      if (content.includes("sword") && content.includes("kaelen")) {
-        warnings.push({
-          title: "Ability Contradiction",
-          content: "Kaelen is shown preparing for physical sword combat, but his Story Bible abilities list only Aether manipulation and script translation, explicitly stating he lacks martial training.",
-          severity: "low" as const
-        });
-      }
-
-      // Check if scene metadata location/characters mismatch content
-      const missingChars = project.storyBible.characters
-        .filter(c => content.includes(c.name.toLowerCase()) && !scene.metadata.characters.includes(c.name));
-      if (missingChars.length > 0) {
-        warnings.push({
-          title: "Timeline Chronology & Presence",
-          content: `Characters ${missingChars.map(c => c.name).join(', ')} appear in the dialogue/text, but are not registered in the Scene Metadata's present characters list. This can break downstream timeline tracking.`,
-          severity: "medium" as const
-        });
-      }
-
-      // Check for location weather conflicts
-      if (scene.metadata.location === "The First Tower" && content.includes("sweltering desert heat")) {
-        warnings.push({
-          title: "Location Contradiction",
-          content: "This scene mentions 'sweltering desert heat' in the First Tower, but the location profile describes it as 'perpetually cold with winds howling'.",
-          severity: "high" as const
-        });
-      }
-
+    try {
+      const warnings = await getAIContinuityCheck(scene.content, project.storyBible, scene.metadata, project.settings);
       if (warnings.length === 0) {
-        warnings.push({
-          title: "No Major Inconsistencies Found",
-          content: "The scene aligns nicely with your Story Bible guidelines, active plot threads, and character details.",
-          severity: "low" as const
-        });
+        setContinuityWarnings([
+          {
+            title: 'No Major Inconsistencies Found',
+            content: 'The scene aligns nicely with your Story Bible guidelines, active plot threads, and character details.',
+            severity: 'low'
+          }
+        ]);
+      } else {
+        setContinuityWarnings(warnings);
       }
-
-      setContinuityWarnings(warnings);
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to run continuity check.');
+    } finally {
       setAiRunning(false);
-    }, 1200);
+    }
   };
 
-  const runAIDialogueCheck = () => {
+  const runAIDialogueCheck = async () => {
     if (!activeSceneId) return;
     const scene = project.scenes.find(s => s.id === activeSceneId);
     if (!scene) return;
 
     setAiRunning(true);
     setDialogueWarnings(null);
+    setAiError(null);
 
-    setTimeout(() => {
-      const warnings = [];
-      const content = scene.content;
-
-      // Scan dialogue quotes
-      const quotes = content.match(/"([^"]*)"/g) || [];
-
-      quotes.forEach(quote => {
-        const text = quote.replace(/"/g, '').toLowerCase();
-        
-        // Mira is blunt. If she sounds too flowery:
-        if (content.includes("Mira") && text.includes("perchance") || text.includes("exquisite")) {
-          warnings.push({
-            title: "Out-of-Character Vocabulary",
-            quote,
-            content: "Mira is speaking in a flowery, academic style. Her speech style in the Story Bible is described as 'blunt, short sentences, frequent use of military slang'."
-          });
-        }
-
-        // Kaelen is formal. If he uses modern slang:
-        if (text.includes("hey") || text.includes("what's up") || text.includes("cool")) {
-          warnings.push({
-            title: "Anachronistic / Informal Speech",
-            quote,
-            content: "Kaelen's dialogue uses modern slang. His profile states he uses a formal and precise speech style, and becomes hesitant when anxious."
-          });
-        }
-      });
-
+    try {
+      const warnings = await getAIDialogueCheck(scene.content, project.storyBible, project.settings);
       if (warnings.length === 0) {
-        warnings.push({
-          title: "Dialogue Voice Preserved",
-          quote: "All dialogue chunks analyzed.",
-          content: "The vocabulary, emotional states, and relationships match the character profiles in the Story Bible."
-        });
+        setDialogueWarnings([
+          {
+            title: 'Dialogue Voice Preserved',
+            quote: 'All dialogue chunks analyzed.',
+            content: 'The vocabulary, emotional states, and relationships match the character profiles in the Story Bible.'
+          }
+        ]);
+      } else {
+        setDialogueWarnings(warnings);
       }
-
-      setDialogueWarnings(warnings);
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to run dialogue voice check.');
+    } finally {
       setAiRunning(false);
-    }, 1000);
+    }
   };
 
-  const runPacingAnalysis = () => {
+  const runPacingAnalysis = async () => {
     if (!activeSceneId) return;
     const scene = project.scenes.find(s => s.id === activeSceneId);
     if (!scene) return;
 
     setAiRunning(true);
-    setTimeout(() => {
-      const p = [];
-      if (scene.wordCount < 150) {
-        p.push("Pacing: Very Fast. This scene operates mostly as a quick dialogue exchange. Consider expanding on the environment and inner monologue to heighten the stakes.");
-      } else {
-        p.push("Pacing: Balanced. Good ratio of dialogue, action, and exposition.");
-      }
-      p.push("Sensory Balance: Sound (heavy doors creaking, wind howling) and Sight (moonlight shafts, dust dancing) are well represented. Consider adding touch (the freezing cold of the obsidian altar) or smell (old parchment, ozone).");
-      setPacingSuggestions(p);
+    setPacingSuggestions(null);
+    setAiError(null);
+
+    try {
+      const suggestions = await getAIPacingAnalysis(scene.content, project.settings);
+      setPacingSuggestions(suggestions);
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to analyze pacing.');
+    } finally {
       setAiRunning(false);
-    }, 800);
+    }
   };
 
-  const runResearch = (query: string) => {
+  const runResearch = async (query: string) => {
     if (!query) return;
     setAiRunning(true);
-    setTimeout(() => {
-      let results = "";
-      const q = query.toLowerCase();
-      if (q.includes("blacksmith") || q.includes("forge")) {
-        results = "### Medieval Blacksmithing Reference\n\n* **Fuel**: Charcoal was primary (coal only later in the medieval period). Required constant bellows operation to maintain heat (approx. 1200°C to weld iron).\n* **Process**: Heating in the forge hearth, hammering on the anvil, re-heating. Quenching in water or oil to harden steel.\n* **Key Terms**: Tuyere (nozzle for bellows air), Slag (waste impurities), Scale (flaky iron oxide that flies off during hammering).";
-      } else if (q.includes("canal") || q.includes("port")) {
-        results = "### Canal Locks & Port Systems\n\n* **Locks**: Early locks were 'pound locks' consisting of wooden gates. Controlled by lockkeepers.\n* **Smuggling Tactics**: Concealed compartments in flat-bottomed barges, bribery of toll collectors, slipping through at high tide or under cover of fog.";
-      } else {
-        results = `### Quick Reference for "${query}"\n\nSimulated research retrieval: In medieval history, similar topics involved guild restrictions, specific resource management (rationing), and regional patrols. If you're building lore, consider detailing who collects the taxes or manages local transport routes.`;
-      }
+    setResearchResults(null);
+    setAiError(null);
+
+    try {
+      const results = await getAIResearch(query, project.settings);
       setResearchResults(results);
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to fetch research results.');
+    } finally {
       setAiRunning(false);
-    }, 1000);
+    }
   };
 
-  // Memory Generation when Scene is completed
-  const triggerMemoryGeneration = (sceneId: string) => {
+  const triggerMemoryGeneration = async (sceneId: string) => {
     const scene = project.scenes.find(s => s.id === sceneId);
     if (!scene) return;
 
-    const newMemory: MemoryUpdate = {
-      sceneId,
-      summary: `In the rainy lower city, Kaelen and Mira seek out an alleyway to avoid a Silver Order paladin patrol, discussing a smuggler's ship at the canal docks.`,
-      events: [
-        "Kaelen and Mira escape to the lower city slums.",
-        "They evade a squad of Silver Order paladins marching in the rain.",
-        "Kaelen explains their plan to meet a smuggler at midnight at the canal docks."
-      ],
-      newFacts: [
-        "The Silver Order is searching the lower city for the stolen Aether Codex.",
-        "A smuggler is waiting for them at midnight."
-      ],
-      revealedInfo: [
-        "The Order controls the locks and ports, putting their escape plan at extreme risk."
-      ],
-      unresolvedQuestions: [
-        "Will the smuggler stay true to his word?",
-        "How will they bypass the Silver Order blockades at the canal gates?"
-      ],
-      emotionalChanges: [
-        "Kaelen's fear increases as the net tightens. Mira remains pragmatic but tense."
-      ],
-      characterDevelopment: [
-        "Mira shows increasing concern for Kaelen, highlighting her secret conflict."
-      ],
-      timelineUpdates: [
-        "Scene set on 1245-10-13 at 21:30."
-      ],
-      locationUpdates: [
-        "Lower City Slums profile holds notes on rain runoff from Academy spires."
-      ],
-      status: 'pending'
-    };
+    setAiRunning(true);
+    setPendingMemoryUpdate(null);
+    setAiError(null);
 
-    setPendingMemoryUpdate(newMemory);
+    try {
+      const memory = await getAIMemoryGeneration(scene.content, scene.metadata, project.settings);
+      setPendingMemoryUpdate({
+        ...memory,
+        sceneId,
+        status: 'pending'
+      });
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to generate scene memory card.');
+    } finally {
+      setAiRunning(false);
+    }
   };
 
   const approveMemory = () => {
     if (!pendingMemoryUpdate) return;
     
-    // Add memory to list
     setProject(prev => {
-      // Create new memories list
       const approved = { ...pendingMemoryUpdate, status: 'approved' as const };
       const updatedMemories = [...prev.memoryUpdates.filter(m => m.sceneId !== approved.sceneId), approved];
       
-      // Update character relationships/injuries if relevant in memory updates
-      // This simulates updating the Story Bible automatically!
+      const scene = prev.scenes.find(s => s.id === approved.sceneId);
+      const povCharName = scene?.metadata.pov || '';
+      
       const updatedCharacters = prev.storyBible.characters.map(char => {
-        if (char.name === "Kaelen") {
+        if (char.name.toLowerCase() === povCharName.toLowerCase()) {
           return {
             ...char,
-            history: char.history + "\n- Evaded the Silver Order patrol in the lower city slums."
+            history: char.history + `\n- Scene "${scene?.title}" Memory Summary: ${approved.summary}`
           };
         }
         return char;
@@ -984,6 +850,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       pacingSuggestions,
       researchResults,
       pendingMemoryUpdate,
+      aiError,
+      clearAIError,
 
       updateSceneContent,
       selectScene,

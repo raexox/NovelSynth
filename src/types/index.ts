@@ -137,6 +137,7 @@ export interface ProjectState {
   settings: {
     apiKey: string;
     model: string;
+    provider: 'gemini' | 'openai' | 'openrouter';
     aiTemperature: number;
     typewriterMode: boolean;
     focusMode: boolean;
