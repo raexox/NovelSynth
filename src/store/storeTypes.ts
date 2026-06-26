@@ -99,4 +99,6 @@ export interface StoreContextType {
   exportProject: () => void;
   importProject: (data: string) => void;
   updateSettings: (settings: Partial<ProjectState['settings']>) => void;
+  updateBookDetails: (name: string, settings: Partial<ProjectState['settings']>) => void;
+  updateUserSettings: (settings: any) => Promise<void>;
 }

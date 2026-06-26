@@ -142,5 +142,8 @@ export interface ProjectState {
     typewriterMode: boolean;
     focusMode: boolean;
     splitView: boolean;
+    genre?: string;
+    description?: string;
+    targetWordCount?: number;
   };
 }

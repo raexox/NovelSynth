@@ -199,6 +199,19 @@ export const useBooks = (
         content: r.content
       }));
 
+      const userMetaSettings = user?.user_metadata?.novelsynth_settings || {};
+      const mergedSettings = {
+        apiKey: '',
+        model: 'gemini-1.5-flash',
+        provider: 'gemini',
+        aiTemperature: 0.7,
+        typewriterMode: false,
+        focusMode: false,
+        splitView: false,
+        ...userMetaSettings,
+        ...(bookData.settings || {})
+      };
+
       const loadedProject: ProjectState = {
         projectName: bookData.name,
         chapters,
@@ -208,7 +221,7 @@ export const useBooks = (
         notes,
         memoryUpdates,
         snapshots,
-        settings: bookData.settings as any
+        settings: mergedSettings as any
       };
 
       setProject(loadedProject);
@@ -301,11 +314,39 @@ export const useBooks = (
     }
   };
 
+  const updateBookDetails = async (name: string, newSettings: Partial<ProjectState['settings']>) => {
+    if (!activeBookId) return;
+    try {
+      const mergedSettings = { ...project.settings, ...newSettings };
+      const { error } = await supabase
+        .from('books')
+        .update({
+          name,
+          settings: mergedSettings
+        })
+        .eq('id', activeBookId);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        projectName: name,
+        settings: mergedSettings
+      }));
+
+      await fetchBooksList();
+    } catch (err) {
+      console.error('Failed to update book details:', err);
+      alert('Failed to update book details.');
+    }
+  };
+
   return {
     fetchBooksList,
     createBook,
     loadBook,
     closeBook,
-    updateSettings
+    updateSettings,
+    updateBookDetails
   };
 };

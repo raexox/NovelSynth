@@ -80,7 +80,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedText, setSelectedText] = useState<string>('');
 
   // 1. Auth Hook
-  const { signUp, signIn, signOut } = useAuth(
+  const { signUp, signIn, signOut, updateUserSettings } = useAuth(
     setUser,
     setAuthLoading,
     setActiveBookId,
@@ -89,7 +89,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   // 2. Books Hook
-  const { fetchBooksList, createBook, loadBook, closeBook, updateSettings } = useBooks(
+  const { fetchBooksList, createBook, loadBook, closeBook, updateSettings, updateBookDetails } = useBooks(
     user,
     setBooksList,
     activeBookId,
@@ -237,6 +237,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       loadBook,
       closeBook,
       fetchBooksList,
+      updateUserSettings,
+      updateBookDetails,
 
       updateSceneContent,
       updateScene,

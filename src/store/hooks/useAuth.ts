@@ -73,5 +73,27 @@ export const useAuth = (
     return res;
   };
 
-  return { signUp, signIn, signOut };
+  const updateUserSettings = async (settings: any) => {
+    try {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const currentMeta = currentUser?.user_metadata?.novelsynth_settings || {};
+      const { data, error } = await supabase.auth.updateUser({
+        data: {
+          novelsynth_settings: {
+            ...currentMeta,
+            ...settings
+          }
+        }
+      });
+      if (error) throw error;
+      if (data.user) {
+        setUser(data.user);
+      }
+    } catch (err) {
+      console.error('Failed to update user settings:', err);
+      alert('Failed to update user settings.');
+    }
+  };
+
+  return { signUp, signIn, signOut, updateUserSettings };
 };
