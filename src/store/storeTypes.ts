@@ -82,12 +82,12 @@ export interface StoreContextType {
   deleteNote: (id: string) => void;
   
   // AI Commands
-  runAIRevision: (mode: 'light' | 'style' | 'line' | 'dev') => void;
-  runAIContinuityCheck: () => void;
-  runAIDialogueCheck: () => void;
-  runPacingAnalysis: () => void;
-  runResearch: (query: string) => void;
-  approveMemory: () => void;
+  runAIRevision: (mode: 'light' | 'style' | 'line' | 'dev') => Promise<void>;
+  runAIContinuityCheck: () => Promise<void>;
+  runAIDialogueCheck: () => Promise<void>;
+  runPacingAnalysis: () => Promise<void>;
+  runResearch: (query: string) => Promise<void>;
+  approveMemory: () => Promise<void>;
   rejectMemory: () => void;
   triggerMemoryGeneration: (sceneId: string) => void;
   clearAISuggestions: () => void;

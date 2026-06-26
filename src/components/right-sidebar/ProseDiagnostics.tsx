@@ -19,10 +19,10 @@ export const ProseDiagnostics: React.FC = () => {
   const [voiceExpanded, setVoiceExpanded] = useState(true);
   const [pacingExpanded, setPacingExpanded] = useState(true);
 
-  const handleRunAllDiagnostics = () => {
-    runAIContinuityCheck();
-    runAIDialogueCheck();
-    runPacingAnalysis();
+  const handleRunAllDiagnostics = async () => {
+    await runAIContinuityCheck();
+    await runAIDialogueCheck();
+    await runPacingAnalysis();
   };
 
   return (
