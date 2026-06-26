@@ -22,6 +22,10 @@
   --accent-purple-dim: hsla(265, 80%, 65%, 0.15);
   --accent-gold: hsl(45, 90%, 55%);
   --accent-gold-dim: hsla(45, 90%, 55%, 0.15);
+  --accent-secondary: hsl(288, 80%, 68%);
+  --surface-gradient: linear-gradient(180deg, hsla(220, 16%, 13%, 0.96), hsla(220, 16%, 9%, 0.98));
+  --brand-gradient: linear-gradient(135deg, var(--accent-purple), var(--accent-secondary));
+  --panel-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
   --color-success: hsl(140, 70%, 45%);
   --color-success-bg: hsla(140, 70%, 45%, 0.15);
   --color-danger: hsl(355, 75%, 55%);
@@ -33,4 +37,63 @@
   --ai-sidebar-width: 380px;
   --header-height: 48px;
   --statusbar-height: 24px;
+}
+
+:root[data-theme='ember'] {
+  --bg-primary: hsl(18, 15%, 6%);
+  --bg-secondary: hsl(16, 16%, 10%);
+  --bg-tertiary: hsl(15, 16%, 15%);
+  --bg-editor: hsl(20, 18%, 8%);
+  --border-color: hsl(16, 13%, 21%);
+  --border-color-focus: hsl(18, 88%, 60%);
+  --text-primary: hsl(28, 20%, 91%);
+  --text-secondary: hsl(27, 12%, 66%);
+  --text-muted: hsl(25, 8%, 47%);
+  --accent-purple: hsl(18, 92%, 62%);
+  --accent-purple-dim: hsla(18, 92%, 62%, 0.16);
+  --accent-secondary: hsl(344, 95%, 68%);
+  --accent-gold: hsl(42, 92%, 58%);
+  --accent-gold-dim: hsla(42, 92%, 58%, 0.16);
+  --surface-gradient: linear-gradient(180deg, hsla(16, 18%, 13%, 0.96), hsla(18, 18%, 8%, 0.98));
+  --brand-gradient: linear-gradient(135deg, var(--accent-purple), var(--accent-secondary));
+}
+
+:root[data-theme='aurora'] {
+  --bg-primary: hsl(190, 36%, 5%);
+  --bg-secondary: hsl(188, 30%, 9%);
+  --bg-tertiary: hsl(187, 24%, 14%);
+  --bg-editor: hsl(192, 32%, 7%);
+  --border-color: hsl(188, 21%, 19%);
+  --border-color-focus: hsl(169, 72%, 54%);
+  --text-primary: hsl(190, 26%, 91%);
+  --text-secondary: hsl(188, 14%, 66%);
+  --text-muted: hsl(188, 10%, 46%);
+  --accent-purple: hsl(169, 72%, 54%);
+  --accent-purple-dim: hsla(169, 72%, 54%, 0.15);
+  --accent-secondary: hsl(211, 100%, 68%);
+  --accent-gold: hsl(47, 88%, 60%);
+  --accent-gold-dim: hsla(47, 88%, 60%, 0.15);
+  --surface-gradient: linear-gradient(180deg, hsla(188, 30%, 12%, 0.96), hsla(192, 32%, 7%, 0.98));
+  --brand-gradient: linear-gradient(135deg, var(--accent-purple), var(--accent-secondary));
+}
+
+:root[data-theme='paper'] {
+  --bg-primary: hsl(37, 35%, 93%);
+  --bg-secondary: hsl(39, 38%, 97%);
+  --bg-tertiary: hsl(37, 27%, 89%);
+  --bg-editor: hsl(40, 50%, 98%);
+  --border-color: hsl(34, 20%, 78%);
+  --border-color-focus: hsl(255, 80%, 66%);
+  --text-primary: hsl(228, 20%, 17%);
+  --text-secondary: hsl(226, 11%, 38%);
+  --text-muted: hsl(226, 8%, 55%);
+  --accent-purple: hsl(255, 80%, 66%);
+  --accent-purple-dim: hsla(255, 80%, 66%, 0.14);
+  --accent-secondary: hsl(31, 64%, 47%);
+  --accent-gold: hsl(38, 76%, 46%);
+  --accent-gold-dim: hsla(38, 76%, 46%, 0.14);
+  --color-danger: hsl(355, 70%, 48%);
+  --surface-gradient: linear-gradient(180deg, hsla(39, 60%, 99%, 0.98), hsla(37, 40%, 94%, 0.98));
+  --brand-gradient: linear-gradient(135deg, var(--accent-purple), var(--accent-secondary));
+  --panel-shadow: 0 18px 45px rgba(80, 65, 45, 0.16);
 }

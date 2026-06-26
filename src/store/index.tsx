@@ -17,6 +17,7 @@ import { usePlotAndNotes } from './hooks/usePlotAndNotes';
 import { useSnapshots } from './hooks/useSnapshots';
 import { useImportExport } from './hooks/useImportExport';
 import { useAI } from './hooks/useAI';
+import { DEFAULT_THEME } from '../theme/themes';
 
 const EMPTY_PROJECT_STATE: ProjectState = {
   projectName: '',
@@ -39,7 +40,8 @@ const EMPTY_PROJECT_STATE: ProjectState = {
     aiTemperature: 0.7,
     typewriterMode: false,
     focusMode: false,
-    splitView: false
+    splitView: false,
+    theme: DEFAULT_THEME
   }
 };
 

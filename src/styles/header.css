@@ -1,7 +1,7 @@
 /* Header Navbar */
 .app-header {
   height: var(--header-height);
-  background-color: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
@@ -9,6 +9,7 @@
   padding: 0 16px;
   user-select: none;
   z-index: 10;
+  backdrop-filter: blur(14px);
 }
 
 .brand-section {
@@ -20,7 +21,7 @@
 .brand-title {
   font-weight: 700;
   font-size: 16px;
-  letter-spacing: -0.2px;
+  letter-spacing: 0;
   background: linear-gradient(135deg, var(--text-primary), var(--accent-purple));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;

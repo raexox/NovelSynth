@@ -9,6 +9,7 @@ import {
   Sparkles, Search, History, Settings, Download, Upload, 
   Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle
 } from 'lucide-react';
+import { DEFAULT_THEME, THEME_OPTIONS, type ThemeId, isThemeId } from './theme/themes';
 
 const AuthGate: React.FC = () => {
   const { signIn, signUp } = useStore();
@@ -170,6 +171,9 @@ const BookDashboard: React.FC = () => {
   const [model, setModel] = useState('gemini-1.5-flash');
   const [provider, setProvider] = useState('gemini');
   const [aiTemp, setAiTemp] = useState(0.7);
+  const [accountTheme, setAccountTheme] = useState<ThemeId>(
+    isThemeId(userSettings.theme) ? userSettings.theme : DEFAULT_THEME
+  );
 
   useEffect(() => {
     if (userSettings) {
@@ -177,8 +181,13 @@ const BookDashboard: React.FC = () => {
       setModel(userSettings.model || 'gemini-1.5-flash');
       setProvider(userSettings.provider || 'gemini');
       setAiTemp(userSettings.aiTemperature || 0.7);
+      setAccountTheme(isThemeId(userSettings.theme) ? userSettings.theme : DEFAULT_THEME);
     }
   }, [user]);
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = accountTheme;
+  }, [accountTheme]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -203,7 +212,8 @@ const BookDashboard: React.FC = () => {
       apiKey: apiKey.trim(),
       model: model.trim(),
       provider,
-      aiTemperature: aiTemp
+      aiTemperature: aiTemp,
+      theme: accountTheme
     });
     setShowAccountSettings(false);
   };
@@ -314,108 +324,130 @@ const BookDashboard: React.FC = () => {
 
       {/* Account & AI Settings Modal */}
       {showAccountSettings && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 200,
-          backdropFilter: 'blur(5px)'
-        }}>
-          <form onSubmit={handleAccountSave} style={{
-            width: '450px',
-            backgroundColor: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 8,
-            padding: 24,
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent-purple)' }}>
+        <div className="settings-overlay">
+          <form onSubmit={handleAccountSave} className="settings-modal settings-modal-wide">
+            <div className="settings-modal-header">
+              <div className="settings-modal-title">
                 <Settings size={18} />
-                <span style={{ fontWeight: 700, fontSize: 15 }}>Account & AI Settings</span>
+                <div>
+                  <span>Account Settings</span>
+                  <p>AI provider, model defaults, and workspace appearance.</p>
+                </div>
               </div>
               <button type="button" className="btn-icon" onClick={() => setShowAccountSettings(false)}>
                 <X size={18} />
               </button>
             </div>
 
-            <div style={{ fontSize: 11.5, color: 'var(--text-secondary)', backgroundColor: 'var(--bg-primary)', padding: '10px 12px', borderRadius: 4, border: '1px solid var(--border-color)' }}>
-              <strong>Signed in as:</strong> {user?.email}
+            <div className="settings-modal-body">
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>Profile</h3>
+                </div>
+                <div className="settings-info-row">
+                  <strong>Signed in as</strong>
+                  <span>{user?.email}</span>
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>Workspace Theme</h3>
+                </div>
+                <div className="theme-grid">
+                  {THEME_OPTIONS.map(theme => (
+                    <button
+                      key={theme.id}
+                      type="button"
+                      className={`theme-choice ${accountTheme === theme.id ? 'active' : ''}`}
+                      onClick={() => setAccountTheme(theme.id)}
+                    >
+                      <span className="theme-choice-swatch-row">
+                        {theme.swatches.map(color => (
+                          <span
+                            key={color}
+                            className="theme-choice-swatch"
+                            style={{ backgroundColor: color }}
+                          />
+                        ))}
+                      </span>
+                      <span className="theme-choice-name">{theme.name}</span>
+                      <span className="theme-choice-description">{theme.description}</span>
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>AI Defaults</h3>
+                </div>
+
+                <div className="settings-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">API Provider</label>
+                    <select
+                      className="form-select"
+                      value={provider}
+                      onChange={e => {
+                        const val = e.target.value as 'gemini' | 'openai' | 'openrouter';
+                        setProvider(val);
+                        if (val === 'gemini') setModel('gemini-1.5-flash');
+                        else if (val === 'openai') setModel('gpt-4o-mini');
+                        else if (val === 'openrouter') setModel('google/gemini-2.5-flash');
+                      }}
+                    >
+                      <option value="gemini">Gemini API</option>
+                      <option value="openai">OpenAI API</option>
+                      <option value="openrouter">OpenRouter API</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">AI Temperature</label>
+                    <div className="range-control">
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1.0"
+                        step="0.05"
+                        value={aiTemp}
+                        onChange={e => setAiTemp(parseFloat(e.target.value))}
+                      />
+                      <span>{aiTemp}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Model Identifier</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. gpt-4o-mini, gemini-1.5-flash..."
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                  />
+                  <span className="form-help">
+                    OpenAI: <code>gpt-4o</code>, <code>gpt-4o-mini</code>. Gemini: <code>gemini-1.5-flash</code>, <code>gemini-1.5-pro</code>. OpenRouter: <code>google/gemini-2.5-flash</code>.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">API Token / Key</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="Enter LLM provider API token..."
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                  />
+                  <span className="form-help">Required for AI scans and generation.</span>
+                </div>
+              </section>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">API Provider</label>
-              <select 
-                className="form-select" 
-                value={provider} 
-                onChange={e => {
-                  const val = e.target.value as 'gemini' | 'openai' | 'openrouter';
-                  setProvider(val);
-                  if (val === 'gemini') setModel('gemini-1.5-flash');
-                  else if (val === 'openai') setModel('gpt-4o-mini');
-                  else if (val === 'openrouter') setModel('google/gemini-2.5-flash');
-                }}
-              >
-                <option value="gemini">Gemini API</option>
-                <option value="openai">OpenAI API</option>
-                <option value="openrouter">OpenRouter API</option>
-              </select>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Model Identifier</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                placeholder="e.g. gpt-4o-mini, gemini-1.5-flash..." 
-                value={model} 
-                onChange={e => setModel(e.target.value)}
-              />
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                OpenAI defaults: <code>gpt-4o</code>, <code>gpt-4o-mini</code>. Gemini: <code>gemini-1.5-flash</code>, <code>gemini-1.5-pro</code>. OpenRouter: <code>google/gemini-2.5-flash</code>.
-              </span>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">API Token / Key</label>
-              <input 
-                type="password" 
-                className="form-input" 
-                placeholder="Enter LLM provider API token..." 
-                value={apiKey}
-                onChange={e => setApiKey(e.target.value)}
-              />
-              <span style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 4, display: 'block' }}>
-                Required. AI scans require a valid API key from your selected provider.
-              </span>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-                <label className="form-label" style={{ marginBottom: 0 }}>AI Temperature</label>
-                <span style={{ fontSize: 11, color: 'var(--accent-purple)', fontWeight: 600 }}>{aiTemp}</span>
-              </div>
-              <input 
-                type="range" 
-                min="0.1" 
-                max="1.0" 
-                step="0.05"
-                style={{ width: '100%' }}
-                value={aiTemp} 
-                onChange={e => setAiTemp(parseFloat(e.target.value))}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
+            <div className="settings-modal-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setShowAccountSettings(false)}>
                 Cancel
               </button>
@@ -439,7 +471,6 @@ const WorkspaceShell: React.FC = () => {
     toggleRightSidebar,
     exportProject,
     importProject,
-    updateSettings,
     closeBook,
     activeLeftTab,
     setLeftTab,
@@ -618,97 +649,90 @@ const WorkspaceShell: React.FC = () => {
 
       {/* Settings Modal (Glassmorphic) */}
       {showSettings && (
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 200,
-          backdropFilter: 'blur(5px)'
-        }}>
-          <form onSubmit={handleSettingsSave} style={{
-            width: '450px',
-            backgroundColor: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 8,
-            padding: 24,
-            boxShadow: '0 20px 25px -5px rgba(0,0,0,0.5)',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 16
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border-color)', paddingBottom: 10 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: 'var(--accent-purple)' }}>
+        <div className="settings-overlay">
+          <form onSubmit={handleSettingsSave} className="settings-modal">
+            <div className="settings-modal-header">
+              <div className="settings-modal-title">
                 <Settings size={18} />
-                <span style={{ fontWeight: 700, fontSize: 15 }}>Book Settings</span>
+                <div>
+                  <span>Book Settings</span>
+                  <p>Project details used for organization and planning.</p>
+                </div>
               </div>
               <button type="button" className="btn-icon" onClick={() => setShowSettings(false)}>
                 <X size={18} />
               </button>
             </div>
 
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Book Title</label>
-              <input 
-                type="text" 
-                className="form-input" 
-                required
-                placeholder="Enter book title..." 
-                value={bookTitle} 
-                onChange={e => setBookTitle(e.target.value)}
-              />
+            <div className="settings-modal-body">
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>Project Identity</h3>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Book Title</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    required
+                    placeholder="Enter book title..."
+                    value={bookTitle}
+                    onChange={e => setBookTitle(e.target.value)}
+                  />
+                </div>
+
+                <div className="settings-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">Genre</label>
+                    <select
+                      className="form-select"
+                      value={bookGenre}
+                      onChange={e => setBookGenre(e.target.value)}
+                    >
+                      <option value="">Select Genre...</option>
+                      <option value="Fantasy">Fantasy</option>
+                      <option value="Sci-Fi">Sci-Fi</option>
+                      <option value="Mystery">Mystery</option>
+                      <option value="Thriller">Thriller</option>
+                      <option value="Romance">Romance</option>
+                      <option value="Historical Fiction">Historical Fiction</option>
+                      <option value="Non-Fiction">Non-Fiction</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Target Word Count</label>
+                    <input
+                      type="number"
+                      className="form-input"
+                      min="0"
+                      step="5000"
+                      value={bookTargetWords}
+                      onChange={e => setBookTargetWords(Number(e.target.value))}
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>Synopsis</h3>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Description / Synopsis</label>
+                  <textarea
+                    className="form-textarea settings-large-textarea"
+                    placeholder="Brief summary of the book plot or objective..."
+                    value={bookDesc}
+                    onChange={e => setBookDesc(e.target.value)}
+                  />
+                </div>
+              </section>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Genre</label>
-                <select 
-                  className="form-select" 
-                  value={bookGenre} 
-                  onChange={e => setBookGenre(e.target.value)}
-                >
-                  <option value="">Select Genre...</option>
-                  <option value="Fantasy">Fantasy</option>
-                  <option value="Sci-Fi">Sci-Fi</option>
-                  <option value="Mystery">Mystery</option>
-                  <option value="Thriller">Thriller</option>
-                  <option value="Romance">Romance</option>
-                  <option value="Historical Fiction">Historical Fiction</option>
-                  <option value="Non-Fiction">Non-Fiction</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="form-group" style={{ marginBottom: 0 }}>
-                <label className="form-label">Target Word Count</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  min="0"
-                  step="5000"
-                  value={bookTargetWords} 
-                  onChange={e => setBookTargetWords(Number(e.target.value))}
-                />
-              </div>
-            </div>
-
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Description / Synopsis</label>
-              <textarea 
-                className="form-textarea" 
-                style={{ minHeight: '100px' }}
-                placeholder="Brief summary of the book plot or objective..." 
-                value={bookDesc} 
-                onChange={e => setBookDesc(e.target.value)}
-              />
-            </div>
-
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end', marginTop: 10 }}>
+            <div className="settings-modal-actions">
               <button type="button" className="btn btn-secondary" onClick={() => setShowSettings(false)}>
                 Cancel
               </button>
@@ -760,6 +784,11 @@ const WorkspaceWrapper: React.FC = () => {
 
 const NavigationWrapper: React.FC = () => {
   const { user, authLoading } = useStore();
+
+  useEffect(() => {
+    const userTheme = user?.user_metadata?.novelsynth_settings?.theme;
+    document.documentElement.dataset.theme = isThemeId(userTheme) ? userTheme : DEFAULT_THEME;
+  }, [user]);
 
   if (authLoading) {
     return (

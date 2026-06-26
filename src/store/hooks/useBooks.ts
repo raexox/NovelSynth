@@ -4,6 +4,7 @@ import { supabase } from '../../services/supabaseClient';
 import type { 
   ProjectState, Chapter, Scene, PlotThread, Note, MemoryUpdate, VersionSnapshot 
 } from '../../types';
+import { DEFAULT_THEME, isThemeId } from '../../theme/themes';
 
 export const useBooks = (
   user: User | null,
@@ -208,9 +209,13 @@ export const useBooks = (
         typewriterMode: false,
         focusMode: false,
         splitView: false,
-        ...userMetaSettings,
-        ...(bookData.settings || {})
+        theme: DEFAULT_THEME,
+        ...(bookData.settings || {}),
+        ...userMetaSettings
       };
+      if (!isThemeId(mergedSettings.theme)) {
+        mergedSettings.theme = DEFAULT_THEME;
+      }
 
       const loadedProject: ProjectState = {
         projectName: bookData.name,
@@ -287,7 +292,8 @@ export const useBooks = (
         aiTemperature: 0.7,
         typewriterMode: false,
         focusMode: false,
-        splitView: false
+        splitView: false,
+        theme: DEFAULT_THEME
       }
     });
   };
@@ -318,11 +324,12 @@ export const useBooks = (
     if (!activeBookId) return;
     try {
       const mergedSettings = { ...project.settings, ...newSettings };
+      const { theme: _accountTheme, ...bookSettings } = mergedSettings;
       const { error } = await supabase
         .from('books')
         .update({
           name,
-          settings: mergedSettings
+          settings: bookSettings
         })
         .eq('id', activeBookId);
 

@@ -4,19 +4,23 @@
   height: 100vh;
   display: flex;
   flex-direction: column;
-  background-color: var(--bg-primary);
+  background:
+    radial-gradient(circle at 20% 0%, var(--accent-purple-dim), transparent 28rem),
+    radial-gradient(circle at 85% 12%, color-mix(in srgb, var(--accent-secondary) 12%, transparent), transparent 24rem),
+    var(--bg-primary);
   overflow-y: auto;
 }
 
 .dashboard-header {
   height: var(--header-height);
-  background-color: var(--bg-secondary);
+  background: color-mix(in srgb, var(--bg-secondary) 88%, transparent);
   border-bottom: 1px solid var(--border-color);
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
   flex-shrink: 0;
+  backdrop-filter: blur(14px);
 }
 
 .dashboard-logo {
@@ -88,7 +92,7 @@
 
 .book-card {
   position: relative;
-  background-color: var(--bg-secondary);
+  background: var(--surface-gradient);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 24px;
@@ -102,8 +106,8 @@
 
 .book-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+  border-color: color-mix(in srgb, var(--accent-purple) 42%, var(--border-color));
+  box-shadow: var(--panel-shadow);
 }
 
 .book-card-glow {

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState } from '../../types';
+import { DEFAULT_THEME } from '../../theme/themes';
 
 const EMPTY_PROJECT_STATE: ProjectState = {
   projectName: '',
@@ -24,7 +25,8 @@ const EMPTY_PROJECT_STATE: ProjectState = {
     aiTemperature: 0.7,
     typewriterMode: false,
     focusMode: false,
-    splitView: false
+    splitView: false,
+    theme: DEFAULT_THEME
   }
 };
 

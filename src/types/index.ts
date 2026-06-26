@@ -1,3 +1,5 @@
+import type { ThemeId } from '../theme/themes';
+
 export interface SceneMetadata {
   pov: string;
   date: string;
@@ -142,6 +144,7 @@ export interface ProjectState {
     typewriterMode: boolean;
     focusMode: boolean;
     splitView: boolean;
+    theme: ThemeId;
     genre?: string;
     description?: string;
     targetWordCount?: number;
