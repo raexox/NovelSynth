@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js';
 import type { 
-  ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate 
+  ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate, Chapter, Scene 
 } from '../types';
 
 /**
@@ -57,8 +57,10 @@ export interface StoreContextType {
 
   // IDE Actions
   updateSceneContent: (id: string, content: string) => void;
+  updateScene: (id: string, updates: Partial<Scene>) => void;
   selectScene: (id: string) => void;
   addChapter: (title: string) => void;
+  updateChapter: (id: string, updates: Partial<Chapter>) => void;
   addScene: (chapterId: string, title: string) => void;
   deleteScene: (id: string) => void;
   deleteChapter: (id: string) => void;

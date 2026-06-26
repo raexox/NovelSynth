@@ -10,6 +10,7 @@ export const Editor: React.FC = () => {
     project,
     activeSceneId,
     updateSceneContent,
+    updateScene,
     pendingMemoryUpdate,
     approveMemory,
     rejectMemory,
@@ -74,12 +75,8 @@ export const Editor: React.FC = () => {
   const handleStatusChange = (status: 'draft' | 'review' | 'finished') => {
     if (!activeScene) return;
     
-    // Update store state
     setAutosaveText('Saving...');
-    updateSceneContent(activeScene.id, activeScene.content);
-    // Directly update status
-    const updatedScenes = project.scenes.map(s => s.id === activeScene.id ? { ...s, status } : s);
-    project.scenes = updatedScenes; // update reference locally
+    updateScene(activeScene.id, { status });
     
     if (status === 'finished') {
       triggerMemoryGeneration(activeScene.id);

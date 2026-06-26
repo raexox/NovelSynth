@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { ManuscriptOutline } from './ManuscriptOutline';
 import { SceneInspector } from './SceneInspector';
+import { ChapterInspector } from './ChapterInspector';
 import { DraftHistory } from './DraftHistory';
 import { ReferenceLibrary } from './ReferenceLibrary';
 
@@ -13,11 +14,13 @@ export const LeftSidebar: React.FC = () => {
 
   // Collapsible states in Manuscript
   const [outlineExpanded, setOutlineExpanded] = useState(true);
+  const [chapterPropertiesExpanded, setChapterPropertiesExpanded] = useState(true);
   const [propertiesExpanded, setPropertiesExpanded] = useState(true);
   const [snapshotsExpanded, setSnapshotsExpanded] = useState(false);
   const [conflictsExpanded, setConflictsExpanded] = useState(true);
 
   const activeScene = project.scenes.find(s => s.id === activeSceneId);
+  const activeChapter = activeScene ? project.chapters.find(c => c.id === activeScene.chapterId) : null;
 
   // Automatically expand snapshots section if user clicks History Snapshot in the header
   useEffect(() => {
@@ -149,6 +152,21 @@ export const LeftSidebar: React.FC = () => {
               </div>
               {outlineExpanded && <ManuscriptOutline />}
             </div>
+
+            {/* Chapter Properties Inspector Card */}
+            {activeScene && activeChapter && (
+              <div className="sidebar-section-card" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 6, overflow: 'hidden' }}>
+                <div 
+                  className="sidebar-section-card-header"
+                  style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', backgroundColor: 'var(--bg-secondary)', borderBottom: chapterPropertiesExpanded ? '1px solid var(--border-color)' : 'none' }}
+                  onClick={() => setChapterPropertiesExpanded(!chapterPropertiesExpanded)}
+                >
+                  {chapterPropertiesExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                  <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px' }}>CHAPTER PROPERTIES: {activeChapter.title.toUpperCase()}</span>
+                </div>
+                {chapterPropertiesExpanded && <ChapterInspector chapterId={activeChapter.id} />}
+              </div>
+            )}
 
             {/* Scene Properties Inspector Card */}
             {activeScene && (

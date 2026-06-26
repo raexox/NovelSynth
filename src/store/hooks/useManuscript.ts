@@ -63,6 +63,44 @@ export const useManuscript = (
     }, 1000);
   };
 
+  const updateScene = async (id: string, updates: Partial<Scene>) => {
+    try {
+      const currentScene = project.scenes.find(s => s.id === id);
+      if (!currentScene) return;
+
+      const mergedScene = { ...currentScene, ...updates };
+
+      const dbUpdates: any = {};
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.content !== undefined) dbUpdates.content = updates.content;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.wordCount !== undefined) dbUpdates.word_count = updates.wordCount;
+      if (updates.order !== undefined) dbUpdates.order_index = updates.order;
+
+      if (updates.content !== undefined) {
+        const wordCount = updates.content.split(/\s+/).filter(Boolean).length;
+        mergedScene.wordCount = wordCount;
+        dbUpdates.word_count = wordCount;
+      }
+      mergedScene.lastSaved = new Date().toISOString();
+      dbUpdates.updated_at = mergedScene.lastSaved;
+
+      const { error } = await supabase
+        .from('scenes')
+        .update(dbUpdates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => {
+        const updatedScenes = prev.scenes.map(s => s.id === id ? mergedScene : s);
+        return { ...prev, scenes: updatedScenes };
+      });
+    } catch (err) {
+      console.error('Failed to update scene:', err);
+    }
+  };
+
   const addChapter = async (title: string) => {
     if (!activeBookId) return;
     try {
@@ -91,6 +129,38 @@ export const useManuscript = (
       }));
     } catch (err) {
       console.error('Failed to add chapter:', err);
+    }
+  };
+
+  const updateChapter = async (id: string, updates: Partial<Chapter>) => {
+    try {
+      const currentChapter = project.chapters.find(c => c.id === id);
+      if (!currentChapter) return;
+
+      const mergedChapter = { ...currentChapter, ...updates };
+
+      const dbUpdates: any = {};
+      if (updates.title !== undefined) dbUpdates.title = updates.title;
+      if (updates.order !== undefined) dbUpdates.order_index = updates.order;
+
+      const { error } = await supabase
+        .from('chapters')
+        .update(dbUpdates)
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => {
+        const updatedChapters = prev.chapters.map(c => {
+          if (c.id === id) {
+            return mergedChapter;
+          }
+          return c;
+        });
+        return { ...prev, chapters: updatedChapters };
+      });
+    } catch (err) {
+      console.error('Failed to update chapter:', err);
     }
   };
 
@@ -226,7 +296,9 @@ export const useManuscript = (
   return {
     selectScene,
     updateSceneContent,
+    updateScene,
     addChapter,
+    updateChapter,
     addScene,
     deleteScene,
     deleteChapter,

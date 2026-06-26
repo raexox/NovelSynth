@@ -140,7 +140,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const {
     selectScene,
     updateSceneContent,
+    updateScene,
     addChapter,
+    updateChapter,
     addScene,
     deleteScene,
     deleteChapter,
@@ -237,8 +239,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       fetchBooksList,
 
       updateSceneContent,
+      updateScene,
       selectScene,
       addChapter,
+      updateChapter,
       addScene,
       deleteScene,
       deleteChapter,

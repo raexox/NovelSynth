@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
-import { ChevronDown, ChevronRight, Plus, BookOpen, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, BookOpen, Trash2, Edit3 } from 'lucide-react';
 
 export const ManuscriptOutline: React.FC = () => {
   const {
@@ -8,9 +8,11 @@ export const ManuscriptOutline: React.FC = () => {
     activeSceneId,
     selectScene,
     addChapter,
+    updateChapter,
     addScene,
     deleteScene,
-    deleteChapter
+    deleteChapter,
+    updateScene
   } = useStore();
 
   const [expandedChapters, setExpandedChapters] = useState<Record<string, boolean>>({
@@ -20,6 +22,10 @@ export const ManuscriptOutline: React.FC = () => {
   });
   const [newChapterTitle, setNewChapterTitle] = useState('');
   const [showAddChapter, setShowAddChapter] = useState(false);
+  const [editingChapterId, setEditingChapterId] = useState<string | null>(null);
+  const [editingChapterTitle, setEditingChapterTitle] = useState('');
+  const [editingSceneId, setEditingSceneId] = useState<string | null>(null);
+  const [editingSceneTitle, setEditingSceneTitle] = useState('');
 
   const toggleChapterExpand = (chId: string) => {
     setExpandedChapters(prev => ({ ...prev, [chId]: !prev[chId] }));
@@ -31,6 +37,30 @@ export const ManuscriptOutline: React.FC = () => {
     addChapter(newChapterTitle);
     setNewChapterTitle('');
     setShowAddChapter(false);
+  };
+
+  const startEditingChapter = (chId: string, currentTitle: string) => {
+    setEditingChapterId(chId);
+    setEditingChapterTitle(currentTitle);
+  };
+
+  const handleEditChapterSubmit = (chId: string) => {
+    if (editingChapterTitle.trim()) {
+      updateChapter(chId, { title: editingChapterTitle.trim() });
+    }
+    setEditingChapterId(null);
+  };
+
+  const startEditingScene = (scId: string, currentTitle: string) => {
+    setEditingSceneId(scId);
+    setEditingSceneTitle(currentTitle);
+  };
+
+  const handleEditSceneSubmit = (scId: string) => {
+    if (editingSceneTitle.trim()) {
+      updateScene(scId, { title: editingSceneTitle.trim() });
+    }
+    setEditingSceneId(null);
   };
 
   return (
@@ -58,19 +88,62 @@ export const ManuscriptOutline: React.FC = () => {
               .filter(s => s.chapterId === ch.id)
               .sort((a, b) => a.order - b.order);
             const isExpanded = expandedChapters[ch.id];
+            const isActiveChapter = project.scenes.find(s => s.id === activeSceneId)?.chapterId === ch.id;
 
             return (
               <div key={ch.id} style={{ marginBottom: 6 }}>
                 <div 
-                  className="tree-item"
-                  style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: 12.5 }}
+                  className={`tree-item ${isActiveChapter ? 'selected' : ''}`}
+                  style={{ 
+                    fontWeight: 600, 
+                    color: isActiveChapter ? 'var(--accent-purple)' : 'var(--text-primary)', 
+                    fontSize: 12.5,
+                    backgroundColor: isActiveChapter ? 'hsla(265, 80%, 65%, 0.08)' : 'transparent',
+                    borderLeft: isActiveChapter ? '2px solid var(--accent-purple)' : '2px solid transparent',
+                    borderRadius: 4,
+                    padding: '6px 8px 6px ' + (isActiveChapter ? '6px' : '8px'),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between'
+                  }}
                   onClick={() => toggleChapterExpand(ch.id)}
                 >
-                  <span className="tree-item-title">
-                    {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                    {ch.title}
-                  </span>
-                  <div className="tree-actions">
+                  {editingChapterId === ch.id ? (
+                    <form 
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleEditChapterSubmit(ch.id);
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      style={{ display: 'flex', gap: 4, flex: 1, marginRight: 6 }}
+                    >
+                      <input 
+                        type="text"
+                        className="form-input"
+                        value={editingChapterTitle}
+                        onChange={e => setEditingChapterTitle(e.target.value)}
+                        autoFocus
+                        onBlur={() => handleEditChapterSubmit(ch.id)}
+                        style={{ fontSize: 11.5, padding: '2px 6px', height: 22 }}
+                      />
+                    </form>
+                  ) : (
+                    <span 
+                      className="tree-item-title"
+                      style={{ gap: 6 }}
+                      onDoubleClick={(e) => {
+                        e.stopPropagation();
+                        startEditingChapter(ch.id, ch.title);
+                      }}
+                    >
+                      {isExpanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                      <span style={{ fontSize: 10, opacity: 0.6, letterSpacing: '0.5px', textTransform: 'uppercase', marginRight: 2 }}>
+                        Ch {ch.order}:
+                      </span>
+                      <span>{ch.title}</span>
+                    </span>
+                  )}
+                  <div className="tree-actions" onClick={e => e.stopPropagation()}>
                     <button 
                       className="btn-icon" 
                       onClick={(e) => {
@@ -80,6 +153,16 @@ export const ManuscriptOutline: React.FC = () => {
                       title="Add Scene"
                     >
                       <Plus size={12} />
+                    </button>
+                    <button 
+                      className="btn-icon" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        startEditingChapter(ch.id, ch.title);
+                      }}
+                      title="Rename Chapter"
+                    >
+                      <Edit3 size={11} />
                     </button>
                     <button 
                       className="btn-icon" 
@@ -103,11 +186,39 @@ export const ManuscriptOutline: React.FC = () => {
                         onClick={() => selectScene(sc.id)}
                         style={{ fontSize: 12, padding: '4px 6px' }}
                       >
-                        <span className="tree-item-title" style={{ gap: 6 }}>
-                          <BookOpen size={11} style={{ opacity: 0.7 }} />
-                          {sc.title}
-                        </span>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {editingSceneId === sc.id ? (
+                          <form 
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              handleEditSceneSubmit(sc.id);
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                            style={{ display: 'flex', gap: 4, flex: 1, marginRight: 6 }}
+                          >
+                            <input 
+                              type="text"
+                              className="form-input"
+                              value={editingSceneTitle}
+                              onChange={e => setEditingSceneTitle(e.target.value)}
+                              autoFocus
+                              onBlur={() => handleEditSceneSubmit(sc.id)}
+                              style={{ fontSize: 11, padding: '2px 6px', height: 20 }}
+                            />
+                          </form>
+                        ) : (
+                          <span 
+                            className="tree-item-title" 
+                            style={{ gap: 6 }}
+                            onDoubleClick={(e) => {
+                              e.stopPropagation();
+                              startEditingScene(sc.id, sc.title);
+                            }}
+                          >
+                            <BookOpen size={11} style={{ opacity: 0.7 }} />
+                            <span>{sc.title}</span>
+                          </span>
+                        )}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={e => e.stopPropagation()}>
                           <span className={`badge badge-${sc.status}`} style={{
                             fontSize: 8.5,
                             padding: '1px 4px',
@@ -120,6 +231,16 @@ export const ManuscriptOutline: React.FC = () => {
                             {sc.status}
                           </span>
                           <div className="tree-actions">
+                            <button 
+                              className="btn-icon" 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                startEditingScene(sc.id, sc.title);
+                              }}
+                              title="Rename Scene"
+                            >
+                              <Edit3 size={10} />
+                            </button>
                             <button 
                               className="btn-icon" 
                               onClick={(e) => {
