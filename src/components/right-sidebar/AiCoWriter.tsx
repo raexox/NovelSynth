@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
 import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { ProseRevisionCard } from './ProseRevisionCard';
+import { notify } from '../../services/notifications';
 
 export const AiCoWriter: React.FC = () => {
   const {
@@ -203,7 +204,11 @@ export const AiCoWriter: React.FC = () => {
                         }
                       }
                       replaceSelectedText(cleanProse.trim());
-                      alert("Selection replaced in manuscript!");
+                      notify({
+                        tone: 'success',
+                        title: 'Selection replaced',
+                        message: 'The revised text was applied to the manuscript.'
+                      });
                     }}
                   >
                     ✍️ Replace Selection

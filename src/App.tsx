@@ -4,7 +4,9 @@ import { StoreProvider, useStore } from './store';
 import { LeftSidebar } from './components/left-sidebar/LeftSidebar';
 import { Editor } from './components/Editor';
 import { RightSidebar } from './components/right-sidebar/RightSidebar';
+import { ToastHost } from './components/ToastHost';
 import { isSupabaseConfigured } from './services/supabaseClient';
+import { notify } from './services/notifications';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
   Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle
@@ -35,7 +37,11 @@ const AuthGate: React.FC = () => {
       if (isSignUp) {
         const { error } = await signUp(email, password);
         if (error) throw error;
-        alert('Registration successful! You can now sign in.');
+        notify({
+          tone: 'success',
+          title: 'Account created',
+          message: 'You can now sign in.'
+        });
         setIsSignUp(false);
       } else {
         const { error } = await signIn(email, password);
@@ -827,6 +833,7 @@ function App() {
   return (
     <StoreProvider>
       <NavigationWrapper />
+      <ToastHost />
     </StoreProvider>
   )
 }

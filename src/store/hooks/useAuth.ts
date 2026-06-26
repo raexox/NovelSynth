@@ -3,6 +3,7 @@ import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState } from '../../types';
 import { DEFAULT_THEME } from '../../theme/themes';
+import { notify } from '../../services/notifications';
 
 const EMPTY_PROJECT_STATE: ProjectState = {
   projectName: '',
@@ -93,7 +94,11 @@ export const useAuth = (
       }
     } catch (err) {
       console.error('Failed to update user settings:', err);
-      alert('Failed to update user settings.');
+      notify({
+        tone: 'error',
+        title: 'Settings not saved',
+        message: 'Failed to update user settings.'
+      });
     }
   };
 

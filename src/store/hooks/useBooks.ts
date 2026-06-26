@@ -5,6 +5,7 @@ import type {
   ProjectState, Chapter, Scene, PlotThread, Note, MemoryUpdate, VersionSnapshot 
 } from '../../types';
 import { DEFAULT_THEME, isThemeId } from '../../theme/themes';
+import { notify } from '../../services/notifications';
 
 export const useBooks = (
   user: User | null,
@@ -239,7 +240,11 @@ export const useBooks = (
       }
     } catch (err) {
       console.error('Failed to load book:', err);
-      alert('Error loading book details.');
+      notify({
+        tone: 'error',
+        title: 'Book failed to load',
+        message: 'Could not load this project from the cloud.'
+      });
     } finally {
       setBooksLoading(false);
     }
@@ -265,7 +270,11 @@ export const useBooks = (
       }
     } catch (err: any) {
       console.error('Failed to create book:', err);
-      alert('Error creating book: ' + (err.message || JSON.stringify(err)));
+      notify({
+        tone: 'error',
+        title: 'Book not created',
+        message: err.message || 'An unexpected error occurred while creating the book.'
+      });
     }
   };
 
@@ -344,7 +353,11 @@ export const useBooks = (
       await fetchBooksList();
     } catch (err) {
       console.error('Failed to update book details:', err);
-      alert('Failed to update book details.');
+      notify({
+        tone: 'error',
+        title: 'Book settings not saved',
+        message: 'Failed to update book details.'
+      });
     }
   };
 

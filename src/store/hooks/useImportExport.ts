@@ -1,5 +1,6 @@
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState } from '../../types';
+import { notify } from '../../services/notifications';
 
 export const useImportExport = (
   activeBookId: string | null,
@@ -130,12 +131,25 @@ export const useImportExport = (
 
         // Reload Book
         await loadBook(activeBookId);
+        notify({
+          tone: 'success',
+          title: 'Project imported',
+          message: 'The current book has been replaced with the imported project.'
+        });
       } else {
-        alert("Invalid project format!");
+        notify({
+          tone: 'warning',
+          title: 'Invalid project file',
+          message: 'The selected JSON does not match the NovelSynth project format.'
+        });
       }
     } catch (e) {
-      alert("Failed to parse/import project JSON.");
       console.error(e);
+      notify({
+        tone: 'error',
+        title: 'Import failed',
+        message: 'Could not parse or import the selected project JSON.'
+      });
     }
   };
 

@@ -10,6 +10,7 @@ import {
   getAIChatResponse 
 } from '../../services/aiService';
 import type { ProjectState, MemoryUpdate } from '../../types';
+import { notify } from '../../services/notifications';
 
 /**
  * Custom hook managing AI analysis, prompt contexts, history logs, and interactive chat.
@@ -120,7 +121,11 @@ export const useAI = (
     if (!scene) return;
 
     if (!scene.content.includes(selectedText)) {
-      alert("Cannot apply rewrite: The selected text context has changed or is no longer found in the scene.");
+      notify({
+        tone: 'warning',
+        title: 'Selection changed',
+        message: 'Cannot apply the rewrite because the selected text is no longer found in the scene.'
+      });
       return;
     }
 
