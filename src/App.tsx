@@ -9,7 +9,7 @@ import { isSupabaseConfigured } from './services/supabaseClient';
 import { notify } from './services/notifications';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
-  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle, Trash2
+  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle, Trash2, Image as ImageIcon
 } from 'lucide-react';
 import { DEFAULT_THEME, THEME_OPTIONS, type ThemeId, isThemeId } from './theme/themes';
 
@@ -280,10 +280,22 @@ const BookDashboard: React.FC = () => {
             {booksList.map(book => (
               <div key={book.id} className="book-card" onClick={() => navigate(`/book/${book.id}`)}>
                 <div className="book-card-glow"></div>
+                <div className="book-cover-frame">
+                  {book.settings?.coverImageUrl ? (
+                    <img src={book.settings.coverImageUrl} alt={`${book.name} cover`} className="book-cover-image" />
+                  ) : (
+                    <div className="book-cover-placeholder">
+                      <BookOpen size={26} />
+                    </div>
+                  )}
+                </div>
                 <div className="book-card-header">
                   <BookOpen size={24} className="book-icon" />
                   <h3>{book.name}</h3>
                 </div>
+                {book.settings?.genre && (
+                  <div className="book-card-subtitle">{book.settings.genre}</div>
+                )}
                 <div className="book-card-stats">
                   <div className="stat-item">
                     <span className="stat-value">{book.wordCount?.toLocaleString() || 0}</span>
@@ -493,6 +505,7 @@ const WorkspaceShell: React.FC = () => {
   const [bookGenre, setBookGenre] = useState(project.settings.genre || '');
   const [bookTargetWords, setBookTargetWords] = useState(project.settings.targetWordCount || 50000);
   const [bookDesc, setBookDesc] = useState(project.settings.description || '');
+  const [bookCoverImageUrl, setBookCoverImageUrl] = useState(project.settings.coverImageUrl || '');
   const [apiKey, setApiKey] = useState(project.settings.apiKey || '');
   const [model, setModel] = useState(project.settings.model || 'gemini-1.5-flash');
   const [provider, setProvider] = useState<'gemini' | 'openai' | 'openrouter'>(project.settings.provider || 'gemini');
@@ -508,6 +521,7 @@ const WorkspaceShell: React.FC = () => {
     setBookGenre(project.settings.genre || '');
     setBookTargetWords(project.settings.targetWordCount || 50000);
     setBookDesc(project.settings.description || '');
+    setBookCoverImageUrl(project.settings.coverImageUrl || '');
     setApiKey(project.settings.apiKey || '');
     setModel(project.settings.model || 'gemini-1.5-flash');
     setProvider(project.settings.provider || 'gemini');
@@ -518,6 +532,7 @@ const WorkspaceShell: React.FC = () => {
     project.settings.genre,
     project.settings.targetWordCount,
     project.settings.description,
+    project.settings.coverImageUrl,
     project.settings.apiKey,
     project.settings.model,
     project.settings.provider,
@@ -525,6 +540,7 @@ const WorkspaceShell: React.FC = () => {
   ]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const handleImportClick = () => {
     fileInputRef.current?.click();
@@ -541,6 +557,35 @@ const WorkspaceShell: React.FC = () => {
     reader.readAsText(file);
   };
 
+  const handleCoverFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      notify({
+        tone: 'warning',
+        title: 'Image required',
+        message: 'Choose a PNG, JPG, or other image file for the book cover.'
+      });
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      notify({
+        tone: 'warning',
+        title: 'Cover too large',
+        message: 'Choose an image under 2 MB so it can be stored with the book settings.'
+      });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = event => {
+      setBookCoverImageUrl(String(event.target?.result || ''));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSettingsSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const aiSettings = {
@@ -555,6 +600,7 @@ const WorkspaceShell: React.FC = () => {
       genre: bookGenre.trim(),
       targetWordCount: Number(bookTargetWords),
       description: bookDesc.trim(),
+      coverImageUrl: bookCoverImageUrl.trim(),
       ...aiSettings
     });
     setShowSettings(false);
@@ -709,7 +755,7 @@ const WorkspaceShell: React.FC = () => {
       {/* Settings Modal (Glassmorphic) */}
       {showSettings && (
         <div className="settings-overlay">
-          <form onSubmit={handleSettingsSave} className="settings-modal">
+          <form onSubmit={handleSettingsSave} className="settings-modal settings-modal-wide book-settings-modal">
             <div className="settings-modal-header">
               <div className="settings-modal-title">
                 <Settings size={18} />
@@ -724,24 +770,27 @@ const WorkspaceShell: React.FC = () => {
             </div>
 
             <div className="settings-modal-body">
-              <section className="settings-section">
-                <div className="settings-section-heading">
-                  <h3>Project Identity</h3>
-                </div>
+              <div className="book-settings-grid">
+                <section className="settings-section">
+                  <div className="settings-section-heading">
+                    <h3>Metadata</h3>
+                  </div>
+                  <p className="settings-section-copy">
+                    This is the metadata of your novel, used for organizing your book collection.
+                  </p>
 
-                <div className="form-group">
-                  <label className="form-label">Book Title</label>
-                  <input
-                    type="text"
-                    className="form-input"
-                    required
-                    placeholder="Enter book title..."
-                    value={bookTitle}
-                    onChange={e => setBookTitle(e.target.value)}
-                  />
-                </div>
+                  <div className="form-group">
+                    <label className="form-label">Book Title</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      required
+                      placeholder="Enter book title..."
+                      value={bookTitle}
+                      onChange={e => setBookTitle(e.target.value)}
+                    />
+                  </div>
 
-                <div className="settings-form-grid">
                   <div className="form-group">
                     <label className="form-label">Genre</label>
                     <select
@@ -772,23 +821,68 @@ const WorkspaceShell: React.FC = () => {
                       onChange={e => setBookTargetWords(Number(e.target.value))}
                     />
                   </div>
-                </div>
-              </section>
 
-              <section className="settings-section">
-                <div className="settings-section-heading">
-                  <h3>Synopsis</h3>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Description / Synopsis</label>
-                  <textarea
-                    className="form-textarea settings-large-textarea"
-                    placeholder="Brief summary of the book plot or objective..."
-                    value={bookDesc}
-                    onChange={e => setBookDesc(e.target.value)}
+                  <div className="form-group">
+                    <label className="form-label">Description / Synopsis</label>
+                    <textarea
+                      className="form-textarea settings-large-textarea"
+                      placeholder="Brief summary of the book plot or objective..."
+                      value={bookDesc}
+                      onChange={e => setBookDesc(e.target.value)}
+                    />
+                  </div>
+                </section>
+
+                <section className="settings-section cover-settings-section">
+                  <div className="settings-section-heading">
+                    <h3>Cover</h3>
+                  </div>
+                  <p className="settings-section-copy">
+                    This image appears on the bookshelf and in collection views.
+                  </p>
+
+                  <div className="cover-preview-frame">
+                    {bookCoverImageUrl ? (
+                      <img src={bookCoverImageUrl} alt="Book cover preview" className="cover-preview-image" />
+                    ) : (
+                      <div className="cover-preview-empty">
+                        <ImageIcon size={28} />
+                        <span>No cover selected</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <input
+                    ref={coverInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleCoverFileChange}
+                    style={{ display: 'none' }}
                   />
-                </div>
-              </section>
+
+                  <div className="cover-actions">
+                    <button type="button" className="btn btn-secondary" onClick={() => coverInputRef.current?.click()}>
+                      <Upload size={14} />
+                      Upload Image
+                    </button>
+                    <button type="button" className="btn btn-secondary" onClick={() => setBookCoverImageUrl('')} disabled={!bookCoverImageUrl}>
+                      Remove
+                    </button>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Cover Image URL</label>
+                    <input
+                      type="text"
+                      className="form-input"
+                      placeholder="https://..."
+                      value={bookCoverImageUrl}
+                      onChange={e => setBookCoverImageUrl(e.target.value)}
+                    />
+                    <span className="form-help">Use a hosted image URL or upload an image under 2 MB.</span>
+                  </div>
+                </section>
+              </div>
 
               <section className="settings-section">
                 <div className="settings-section-heading">

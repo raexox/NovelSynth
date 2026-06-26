@@ -390,6 +390,38 @@
   white-space: nowrap;
 }
 
+.inline-confirm-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, hsl(0, 72%, 55%) 45%, var(--border-color));
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--bg-tertiary) 88%, hsl(0, 72%, 55%));
+}
+
+.inline-confirm-panel strong,
+.inline-confirm-panel span {
+  display: block;
+}
+
+.inline-confirm-panel strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.inline-confirm-panel span {
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.inline-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
 .bible-editor {
   gap: 10px;
 }
@@ -414,9 +446,21 @@
   font-size: 12px;
 }
 
+.bible-editor .form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.45fr) minmax(0, 1fr);
+  gap: 8px;
+}
+
 .bible-editor .form-textarea {
   min-height: 72px;
   font-size: 11.5px;
+}
+
+@media (max-width: 420px) {
+  .bible-editor .form-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* Sleek search card styling */

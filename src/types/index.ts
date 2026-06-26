@@ -30,10 +30,14 @@ export interface Chapter {
 export interface Character {
   id: string;
   name: string;
+  age?: string;
+  role?: string;
   appearance: string;
   personality: string;
   goals: string;
   fears: string;
+  keyFacts?: string;
+  continuityNotes?: string;
   relationships: string;
   abilities: string;
   speechStyle: string;
@@ -148,5 +152,6 @@ export interface ProjectState {
     genre?: string;
     description?: string;
     targetWordCount?: number;
+    coverImageUrl?: string;
   };
 }

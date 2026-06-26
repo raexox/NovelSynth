@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { 
   User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus
@@ -8,7 +8,10 @@ import { PlotThreadsTracker } from './PlotThreadsTracker';
 import { ScrapbookNotes } from './ScrapbookNotes';
 import { IntelligentSearch } from './IntelligentSearch';
 
+type BibleCategory = 'characters' | 'locations' | 'factions' | 'powerSystems';
+
 export const ReferenceLibrary: React.FC = () => {
+  const [pendingDelete, setPendingDelete] = useState<{ category: BibleCategory; id: string; name: string } | null>(null);
   const {
     project,
     activeLeftTab,
@@ -37,7 +40,7 @@ export const ReferenceLibrary: React.FC = () => {
 
   const createBibleItem = () => {
     if (activeBibleCategory === 'characters') {
-      addBibleItem('characters', { name: 'New Character', appearance: '', personality: '', goals: '', fears: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
+      addBibleItem('characters', { name: 'New Character', age: '', role: '', appearance: '', personality: '', goals: '', fears: '', keyFacts: '', continuityNotes: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
     } else if (activeBibleCategory === 'locations') {
       addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
     } else if (activeBibleCategory === 'factions') {
@@ -115,8 +118,9 @@ export const ReferenceLibrary: React.FC = () => {
                           className="btn-icon"
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (confirm(`Delete ${item.name}?`)) deleteBibleItem(activeBibleCategory, item.id);
+                            setPendingDelete({ category: activeBibleCategory, id: item.id, name: item.name });
                           }}
+                          aria-label={`Delete ${item.name}`}
                         >
                           <Trash2 size={12} />
                         </button>
@@ -134,6 +138,30 @@ export const ReferenceLibrary: React.FC = () => {
                     </div>
                   )}
                 </div>
+                {pendingDelete && (
+                  <div className="inline-confirm-panel" role="dialog" aria-modal="false" aria-labelledby="delete-bible-item-title">
+                    <div>
+                      <strong id="delete-bible-item-title">Delete {pendingDelete.name}?</strong>
+                      <span>This removes the item from the Story Bible.</span>
+                    </div>
+                    <div className="inline-confirm-actions">
+                      <button type="button" className="btn btn-secondary sidebar-icon-label-btn" onClick={() => setPendingDelete(null)}>
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn-danger sidebar-icon-label-btn"
+                        onClick={() => {
+                          deleteBibleItem(pendingDelete.category, pendingDelete.id);
+                          setPendingDelete(null);
+                        }}
+                      >
+                        <Trash2 size={13} />
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             ) : (
               <BibleItemEditor />

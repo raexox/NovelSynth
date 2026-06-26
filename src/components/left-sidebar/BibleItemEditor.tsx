@@ -13,6 +13,7 @@ export const BibleItemEditor: React.FC = () => {
   } = useStore();
 
   const item = project.storyBible[activeBibleCategory].find((i: any) => i.id === activeBibleItemId);
+  const textValue = (value: unknown) => typeof value === 'string' ? value : '';
 
   if (!item) {
     return <div style={{ fontSize: 12, padding: 12 }}>Item not found.</div>;
@@ -42,11 +43,31 @@ export const BibleItemEditor: React.FC = () => {
 
         {activeBibleCategory === 'characters' && (
           <>
+            <div className="form-row">
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Age</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={textValue((item as Character).age)}
+                  onChange={e => updateBibleItem('characters', { ...item, age: e.target.value })}
+                />
+              </div>
+              <div className="form-group" style={{ marginBottom: 0 }}>
+                <label className="form-label">Role</label>
+                <input
+                  type="text"
+                  className="form-input"
+                  value={textValue((item as Character).role)}
+                  onChange={e => updateBibleItem('characters', { ...item, role: e.target.value })}
+                />
+              </div>
+            </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
               <label className="form-label">Appearance</label>
               <textarea 
                 className="form-textarea" 
-                value={(item as Character).appearance} 
+                value={textValue((item as Character).appearance)}
                 onChange={e => updateBibleItem('characters', { ...item, appearance: e.target.value })}
               />
             </div>
@@ -54,36 +75,96 @@ export const BibleItemEditor: React.FC = () => {
               <label className="form-label">Personality</label>
               <textarea 
                 className="form-textarea" 
-                value={(item as Character).personality} 
+                value={textValue((item as Character).personality)}
                 onChange={e => updateBibleItem('characters', { ...item, personality: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Goals & Fears</label>
+              <label className="form-label">Goals</label>
               <textarea 
                 className="form-textarea" 
-                value={`Goals: ${(item as Character).goals}\nFears: ${(item as Character).fears}`} 
-                onChange={e => {
-                  const text = e.target.value;
-                  const goalsPart = text.match(/Goals:\s*([\s\S]*?)(?:\nFears:|$)/i)?.[1] || '';
-                  const fearsPart = text.match(/Fears:\s*([\s\S]*)/i)?.[1] || '';
-                  updateBibleItem('characters', { ...item, goals: goalsPart.trim(), fears: fearsPart.trim() });
-                }}
-                placeholder="Goals: ...&#10;Fears: ..."
+                value={textValue((item as Character).goals)}
+                onChange={e => updateBibleItem('characters', { ...item, goals: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label">Speech Style & Secrets</label>
+              <label className="form-label">Fears</label>
               <textarea 
                 className="form-textarea" 
-                value={`Voice: ${(item as Character).speechStyle}\nSecrets: ${(item as Character).secrets}`} 
-                onChange={e => {
-                  const text = e.target.value;
-                  const voicePart = text.match(/Voice:\s*([\s\S]*?)(?:\nSecrets:|$)/i)?.[1] || '';
-                  const secretsPart = text.match(/Secrets:\s*([\s\S]*)/i)?.[1] || '';
-                  updateBibleItem('characters', { ...item, speechStyle: voicePart.trim(), secrets: secretsPart.trim() });
-                }}
-                placeholder="Voice: ...&#10;Secrets: ..."
+                value={textValue((item as Character).fears)}
+                onChange={e => updateBibleItem('characters', { ...item, fears: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Key Facts</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).keyFacts)}
+                onChange={e => updateBibleItem('characters', { ...item, keyFacts: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Relationships</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).relationships)}
+                onChange={e => updateBibleItem('characters', { ...item, relationships: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Abilities & Limitations</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).abilities)}
+                onChange={e => updateBibleItem('characters', { ...item, abilities: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Speech Style</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).speechStyle)}
+                onChange={e => updateBibleItem('characters', { ...item, speechStyle: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">History</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).history)}
+                onChange={e => updateBibleItem('characters', { ...item, history: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Injuries & Physical Limits</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).injuries)}
+                onChange={e => updateBibleItem('characters', { ...item, injuries: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Secrets</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).secrets)}
+                onChange={e => updateBibleItem('characters', { ...item, secrets: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Development Arc</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).developmentArc)}
+                onChange={e => updateBibleItem('characters', { ...item, developmentArc: e.target.value })}
+              />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Continuity Notes</label>
+              <textarea 
+                className="form-textarea" 
+                value={textValue((item as Character).continuityNotes)}
+                onChange={e => updateBibleItem('characters', { ...item, continuityNotes: e.target.value })}
               />
             </div>
           </>
