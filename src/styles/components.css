@@ -134,6 +134,12 @@
   color: white;
 }
 
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  filter: none;
+}
+
 .btn-icon {
   background: none;
   border: none;
@@ -308,6 +314,32 @@
   border: 1px solid var(--border-color);
   border-radius: 8px;
   background-color: color-mix(in srgb, var(--bg-primary) 48%, transparent);
+}
+
+.danger-section {
+  border-color: color-mix(in srgb, var(--color-danger) 45%, var(--border-color));
+  background:
+    linear-gradient(135deg, var(--color-danger-bg), transparent 54%),
+    color-mix(in srgb, var(--bg-primary) 48%, transparent);
+}
+
+.danger-zone-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+
+.danger-zone-copy strong {
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.danger-zone-copy span {
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.45;
 }
 
 .settings-section-heading {

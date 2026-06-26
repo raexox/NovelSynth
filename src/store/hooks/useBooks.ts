@@ -361,11 +361,52 @@ export const useBooks = (
     }
   };
 
+  const deleteBook = async () => {
+    if (!activeBookId || !user) return false;
+
+    try {
+      await supabase.from('snapshots').delete().eq('book_id', activeBookId);
+      await supabase.from('memory_updates').delete().eq('book_id', activeBookId);
+      await supabase.from('notes').delete().eq('book_id', activeBookId);
+      await supabase.from('plot_threads').delete().eq('book_id', activeBookId);
+      await supabase.from('story_bible_items').delete().eq('book_id', activeBookId);
+      await supabase.from('scenes').delete().eq('book_id', activeBookId);
+      await supabase.from('chapters').delete().eq('book_id', activeBookId);
+
+      const { error } = await supabase
+        .from('books')
+        .delete()
+        .eq('id', activeBookId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+
+      const deletedName = project.projectName || 'Book';
+      closeBook();
+      await fetchBooksList();
+      notify({
+        tone: 'success',
+        title: 'Book deleted',
+        message: `${deletedName} was removed from your bookshelf.`
+      });
+      return true;
+    } catch (err) {
+      console.error('Failed to delete book:', err);
+      notify({
+        tone: 'error',
+        title: 'Book not deleted',
+        message: 'Failed to delete this book and its project data.'
+      });
+      return false;
+    }
+  };
+
   return {
     fetchBooksList,
     createBook,
     loadBook,
     closeBook,
+    deleteBook,
     updateSettings,
     updateBookDetails
   };

@@ -53,6 +53,7 @@ export interface StoreContextType {
   createBook: (name: string) => Promise<void>;
   loadBook: (bookId: string) => Promise<void>;
   closeBook: () => void;
+  deleteBook: () => Promise<boolean>;
   fetchBooksList: () => Promise<void>;
 
   // IDE Actions

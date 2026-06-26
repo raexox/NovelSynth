@@ -9,7 +9,7 @@ import { isSupabaseConfigured } from './services/supabaseClient';
 import { notify } from './services/notifications';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
-  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle
+  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle, Trash2
 } from 'lucide-react';
 import { DEFAULT_THEME, THEME_OPTIONS, type ThemeId, isThemeId } from './theme/themes';
 
@@ -478,6 +478,7 @@ const WorkspaceShell: React.FC = () => {
     exportProject,
     importProject,
     closeBook,
+    deleteBook,
     activeLeftTab,
     setLeftTab,
     updateBookDetails
@@ -491,6 +492,8 @@ const WorkspaceShell: React.FC = () => {
   const [bookGenre, setBookGenre] = useState(project.settings.genre || '');
   const [bookTargetWords, setBookTargetWords] = useState(project.settings.targetWordCount || 50000);
   const [bookDesc, setBookDesc] = useState(project.settings.description || '');
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingBook, setDeletingBook] = useState(false);
 
   const navigate = useNavigate();
 
@@ -500,6 +503,7 @@ const WorkspaceShell: React.FC = () => {
     setBookGenre(project.settings.genre || '');
     setBookTargetWords(project.settings.targetWordCount || 50000);
     setBookDesc(project.settings.description || '');
+    setDeleteConfirmText('');
   }, [project.projectName, project.settings.genre, project.settings.targetWordCount, project.settings.description]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -532,6 +536,28 @@ const WorkspaceShell: React.FC = () => {
   const handleBackToDashboard = () => {
     closeBook();
     navigate('/dashboard');
+  };
+
+  const handleDeleteBook = async () => {
+    if (deleteConfirmText !== project.projectName) {
+      notify({
+        tone: 'warning',
+        title: 'Confirmation mismatch',
+        message: 'Type the exact book title before deleting.'
+      });
+      return;
+    }
+
+    setDeletingBook(true);
+    try {
+      const deleted = await deleteBook();
+      if (deleted) {
+        setShowSettings(false);
+        navigate('/dashboard');
+      }
+    } finally {
+      setDeletingBook(false);
+    }
   };
 
   return (
@@ -735,6 +761,36 @@ const WorkspaceShell: React.FC = () => {
                     onChange={e => setBookDesc(e.target.value)}
                   />
                 </div>
+              </section>
+
+              <section className="settings-section danger-section">
+                <div className="settings-section-heading">
+                  <h3>Danger Zone</h3>
+                </div>
+                <div className="danger-zone-copy">
+                  <strong>Delete this book</strong>
+                  <span>This permanently removes chapters, scenes, story bible entries, notes, plot threads, memory updates, and snapshots.</span>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Type "{project.projectName}" to confirm</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    value={deleteConfirmText}
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    placeholder={project.projectName}
+                    disabled={deletingBook}
+                  />
+                </div>
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={handleDeleteBook}
+                  disabled={deletingBook || deleteConfirmText !== project.projectName}
+                >
+                  <Trash2 size={14} />
+                  {deletingBook ? 'Deleting...' : 'Delete Book'}
+                </button>
               </section>
             </div>
 

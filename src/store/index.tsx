@@ -91,7 +91,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   // 2. Books Hook
-  const { fetchBooksList, createBook, loadBook, closeBook, updateSettings, updateBookDetails } = useBooks(
+  const { fetchBooksList, createBook, loadBook, closeBook, deleteBook, updateSettings, updateBookDetails } = useBooks(
     user,
     setBooksList,
     activeBookId,
@@ -238,6 +238,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       createBook,
       loadBook,
       closeBook,
+      deleteBook,
       fetchBooksList,
       updateUserSettings,
       updateBookDetails,
