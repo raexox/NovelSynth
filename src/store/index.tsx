@@ -9,7 +9,8 @@ import {
   getAIDialogueCheck, 
   getAIPacingAnalysis, 
   getAIResearch, 
-  getAIMemoryGeneration 
+  getAIMemoryGeneration,
+  getAIChatResponse 
 } from '../services/aiService';
 import { supabase } from '../services/supabaseClient';
 
@@ -67,6 +68,14 @@ interface StoreContextType {
   pendingMemoryUpdate: MemoryUpdate | null;
   aiError: string | null;
   clearAIError: () => void;
+
+  // Chat States & Actions
+  chatMessages: Array<{ role: 'user' | 'model'; content: string }>;
+  selectedText: string;
+  setSelectedText: (text: string) => void;
+  sendChatMessage: (content: string) => Promise<void>;
+  replaceSelectedText: (newText: string) => void;
+  clearChat: () => void;
 
   // Auth & Book Actions
   signUp: (email: string, password: string) => Promise<any>;
@@ -152,6 +161,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [aiError, setAiError] = useState<string | null>(null);
 
   const clearAIError = () => setAiError(null);
+
+  // Chat States
+  const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'model'; content: string }>>([]);
+  const [selectedText, setSelectedText] = useState<string>('');
 
   // Debounce timeouts refs
   const sceneTimeoutRef = useRef<{ [key: string]: any }>({});
@@ -935,6 +948,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAiError(null);
   };
 
+  // Chat Actions
+  const sendChatMessage = async (content: string) => {
+    if (!content.trim()) return;
+    
+    const updatedMessages = [...chatMessages, { role: 'user' as const, content }];
+    setChatMessages(updatedMessages);
+    setAiRunning(true);
+    setAiError(null);
+
+    try {
+      const scene = project.scenes.find(s => s.id === activeSceneId);
+      const sceneContent = scene ? scene.content : '';
+
+      const aiResponse = await getAIChatResponse(
+        updatedMessages,
+        sceneContent,
+        selectedText,
+        project.settings
+      );
+
+      setChatMessages([...updatedMessages, { role: 'model' as const, content: aiResponse }]);
+    } catch (err: any) {
+      setAiError(err.message || 'Failed to get response from AI writer agent.');
+    } finally {
+      setAiRunning(false);
+    }
+  };
+
+  const replaceSelectedText = (newText: string) => {
+    if (!activeSceneId || !selectedText) return;
+    const scene = project.scenes.find(s => s.id === activeSceneId);
+    if (!scene) return;
+
+    if (!scene.content.includes(selectedText)) {
+      alert("Cannot apply rewrite: The selected text context has changed or is no longer found in the scene.");
+      return;
+    }
+
+    const updatedContent = scene.content.replace(selectedText, newText);
+    updateSceneContent(activeSceneId, updatedContent);
+    setSelectedText(newText);
+  };
+
+  const clearChat = () => {
+    setChatMessages([]);
+    setSelectedText('');
+  };
+
   // AI Service Integrations (calling aiService.ts)
   const runAIRevision = async (mode: 'light' | 'style' | 'line' | 'dev') => {
     if (!activeSceneId) return;
@@ -1403,6 +1464,13 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       pendingMemoryUpdate,
       aiError,
       clearAIError,
+
+      chatMessages,
+      selectedText,
+      setSelectedText,
+      sendChatMessage,
+      replaceSelectedText,
+      clearChat,
 
       signUp,
       signIn,

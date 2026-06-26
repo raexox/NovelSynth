@@ -360,3 +360,45 @@ ${content}`;
 
   return await callLLM(prompt, settings, systemInstruction);
 }
+
+export async function getAIChatResponse(
+  chatHistory: Array<{ role: 'user' | 'model'; content: string }>,
+  sceneContent: string,
+  selectedText: string,
+  settings: ProjectState['settings']
+): Promise<string> {
+
+  const systemInstruction = `You are a helpful AI writing assistant, line editor, and brainstorming coach integrated inside NovelSynth, an advanced writing IDE.
+Your goal is to help the author brainstorm ideas, outline plots, rewrite sections of their manuscript, or provide developmental suggestions.
+
+Context:
+- Current Scene Manuscript:
+"""
+${sceneContent || '(Empty scene)'}
+"""
+${selectedText ? `- Active Highlighted Selection (discussed context):\n"""\n${selectedText}\n"""` : ''}
+
+Instructions:
+1. Brainstorm creative ideas, give advice, or perform rewrites as requested.
+2. If asked to rewrite, format the rewritten version clearly so the user can easily review it.
+3. Keep your advice professional, encouraging, and specific to the scene context.
+4. Output format MUST be a JSON object containing a single field "response" which is a markdown string.
+
+Example Output format:
+{
+  "response": "### Brainstormed Names\\n\\n1. **Smuggler A**: description...\\n2. **Smuggler B**: description..."
+}`;
+
+  let prompt = "Conversation history:\n\n";
+  chatHistory.slice(0, -1).forEach(msg => {
+    const speaker = msg.role === 'user' ? 'Author' : 'AI Assistant';
+    prompt += speaker + ": " + msg.content + "\n\n";
+  });
+
+  const lastMsg = chatHistory[chatHistory.length - 1];
+  const lastSpeaker = lastMsg.role === 'user' ? 'Author' : 'AI Assistant';
+  prompt += lastSpeaker + ": " + lastMsg.content + "\n\nAI Assistant Response:";
+
+  const result = await callLLM(prompt, settings, systemInstruction);
+  return result.response || '';
+}

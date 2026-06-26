@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../store';
 import { 
   Sparkles, ShieldCheck, UserCheck, MessageSquare, ListFilter, 
@@ -26,11 +26,72 @@ export const RightSidebar: React.FC = () => {
     clearAISuggestions,
     updateSceneContent,
     aiError,
-    clearAIError
+    clearAIError,
+    chatMessages,
+    selectedText,
+    setSelectedText,
+    sendChatMessage,
+    replaceSelectedText,
+    clearChat
   } = useStore();
 
   const [revisionMode, setRevisionMode] = useState<'light' | 'style' | 'line' | 'dev'>('line');
   const [researchQuery, setResearchQuery] = useState('');
+  const [chatInput, setChatInput] = useState('');
+
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Refs for tab buttons to scroll them into view
+  const revisionTabRef = useRef<HTMLButtonElement>(null);
+  const continuityTabRef = useRef<HTMLButtonElement>(null);
+  const memoryTabRef = useRef<HTMLButtonElement>(null);
+  const suggestionsTabRef = useRef<HTMLButtonElement>(null);
+  const contextTabRef = useRef<HTMLButtonElement>(null);
+  const researchTabRef = useRef<HTMLButtonElement>(null);
+  const brainstormTabRef = useRef<HTMLButtonElement>(null);
+
+  // Auto-scroll chat to bottom
+  useEffect(() => {
+    if (activeRightTab === 'brainstorm') {
+      chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages, activeRightTab]);
+
+  // Auto-scroll active tab into view
+  useEffect(() => {
+    let activeRef: React.RefObject<HTMLButtonElement | null> | null = null;
+    if (activeRightTab === 'revision') activeRef = revisionTabRef;
+    else if (activeRightTab === 'continuity') activeRef = continuityTabRef;
+    else if (activeRightTab === 'memory') activeRef = memoryTabRef;
+    else if (activeRightTab === 'suggestions') activeRef = suggestionsTabRef;
+    else if (activeRightTab === 'context') activeRef = contextTabRef;
+    else if (activeRightTab === 'research') activeRef = researchTabRef;
+    else if (activeRightTab === 'brainstorm') activeRef = brainstormTabRef;
+
+    if (activeRef?.current) {
+      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    }
+  }, [activeRightTab]);
+
+  const handleChatSubmit = () => {
+    if (!chatInput.trim()) return;
+    sendChatMessage(chatInput.trim());
+    setChatInput('');
+  };
+
+  const parseChatMarkdown = (text: string) => {
+    if (!text) return '';
+    return text
+      .replace(/^### (.*$)/gim, '<h4 style="color:var(--accent-purple);margin:8px 0 4px 0">$1</h4>')
+      .replace(/^## (.*$)/gim, '<h3 style="color:var(--accent-purple);margin:10px 0 6px 0">$1</h3>')
+      .replace(/^# (.*$)/gim, '<h2 style="color:var(--accent-purple);margin:12px 0 8px 0">$1</h2>')
+      .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+      .replace(/\*(.*)\*/gim, '<em>$1</em>')
+      .replace(/^-\s(.*$)/gim, '<li style="margin-left:14px;font-size:12px;margin-bottom:4px">$1</li>')
+      .replace(/`([^`]+)`/g, '<code style="background-color:var(--bg-primary);padding:2px 4px;border-radius:3px;font-family:var(--font-mono);font-size:11px">$1</code>')
+      .replace(/\n\n/gim, '</p><p style="margin-bottom:8px">')
+      .replace(/\n/gim, '<br />');
+  };
 
   const activeScene = project.scenes.find(s => s.id === activeSceneId);
 
@@ -65,6 +126,7 @@ export const RightSidebar: React.FC = () => {
       {/* Tabs */}
       <div className="sidebar-tabs">
         <button 
+          ref={revisionTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'revision' ? 'active' : ''}`}
           onClick={() => setRightTab('revision')}
           title="AI Revision Diffs"
@@ -73,6 +135,7 @@ export const RightSidebar: React.FC = () => {
           Revision
         </button>
         <button 
+          ref={continuityTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'continuity' ? 'active' : ''}`}
           onClick={() => setRightTab('continuity')}
           title="Continuity Checker"
@@ -81,6 +144,7 @@ export const RightSidebar: React.FC = () => {
           Continuity
         </button>
         <button 
+          ref={memoryTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'memory' ? 'active' : ''}`}
           onClick={() => setRightTab('memory')}
           title="Dialogue & Voice Check"
@@ -89,6 +153,7 @@ export const RightSidebar: React.FC = () => {
           Voice
         </button>
         <button 
+          ref={suggestionsTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'suggestions' ? 'active' : ''}`}
           onClick={() => setRightTab('suggestions')}
           title="Development Suggestions"
@@ -97,6 +162,7 @@ export const RightSidebar: React.FC = () => {
           Pacing
         </button>
         <button 
+          ref={contextTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'context' ? 'active' : ''}`}
           onClick={() => setRightTab('context')}
           title="Active Prompt Context"
@@ -105,6 +171,7 @@ export const RightSidebar: React.FC = () => {
           Context
         </button>
         <button 
+          ref={researchTabRef}
           className={`sidebar-tab-btn ${activeRightTab === 'research' ? 'active' : ''}`}
           onClick={() => setRightTab('research')}
           title="Research Assistant"
@@ -112,9 +179,28 @@ export const RightSidebar: React.FC = () => {
           <Search size={14} style={{marginRight: 4}} />
           Research
         </button>
+        <button 
+          ref={brainstormTabRef}
+          className={`sidebar-tab-btn ${activeRightTab === 'brainstorm' ? 'active' : ''}`}
+          onClick={() => setRightTab('brainstorm')}
+          title="AI Writing Assistant & Chat"
+        >
+          <MessageSquare size={14} style={{marginRight: 4}} />
+          Assistant
+        </button>
       </div>
 
-      <div className="sidebar-content" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      <div 
+        className="sidebar-content" 
+        style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          gap: 12, 
+          flex: 1,
+          minHeight: 0,
+          overflowY: activeRightTab === 'brainstorm' ? 'hidden' : 'auto' 
+        }}
+      >
         {/* API Key Required Check */}
         {!project.settings.apiKey && (
           <div className="continuity-warning" style={{ borderLeftColor: 'var(--accent-gold)', backgroundColor: 'var(--accent-gold-dim)', marginBottom: 8 }}>
@@ -414,6 +500,192 @@ export const RightSidebar: React.FC = () => {
                 }}
                 dangerouslySetInnerHTML={{ __html: researchResults.replace(/\n/g, '<br />') }}
               />
+            )}
+          </div>
+        )}
+
+        {/* ================= ASSISTANT / CHAT TAB ================= */}
+        {activeRightTab === 'brainstorm' && (
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 10 }}>
+            <div>
+              <span className="sidebar-title">AI Writing Assistant</span>
+              <p style={{ fontSize: 11, color: 'var(--text-secondary)', margin: '4px 0 8px 0', lineHeight: 1.4 }}>
+                Discuss your manuscript, brainstorm names or plots, or ask the AI to rewrite selected paragraphs.
+              </p>
+            </div>
+
+            {/* Selected Text context card */}
+            {selectedText ? (
+              <div style={{ 
+                backgroundColor: 'var(--accent-purple-dim)', 
+                borderLeft: '3px solid var(--accent-purple)', 
+                borderRadius: 4, 
+                padding: '8px 10px', 
+                fontSize: 12,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 4
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--accent-purple)', fontSize: 10, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Active Text Context
+                  </span>
+                  <button 
+                    type="button" 
+                    className="btn-icon" 
+                    onClick={() => setSelectedText('')}
+                    style={{ padding: 2, color: 'var(--text-secondary)' }}
+                  >
+                    <X size={10} />
+                  </button>
+                </div>
+                <div style={{ 
+                  color: 'var(--text-primary)', 
+                  whiteSpace: 'nowrap', 
+                  overflow: 'hidden', 
+                  textOverflow: 'ellipsis',
+                  fontSize: 11,
+                  fontStyle: 'italic'
+                }}>
+                  "{selectedText}"
+                </div>
+              </div>
+            ) : (
+              <div style={{ 
+                border: '1px dashed var(--border-color)', 
+                borderRadius: 4, 
+                padding: 8, 
+                fontSize: 11, 
+                color: 'var(--text-muted)',
+                textAlign: 'center'
+              }}>
+                💡 Highlight text in the editor to discuss or rewrite it in context.
+              </div>
+            )}
+
+            {/* Chat Messages Log */}
+            <div style={{ 
+              flex: 1, 
+              minHeight: 0,
+              overflowY: 'auto',
+              border: '1px solid var(--border-color)',
+              borderRadius: 6,
+              backgroundColor: 'var(--bg-primary)',
+              padding: 10,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 12
+            }}>
+              {chatMessages.length === 0 ? (
+                <div style={{ display: 'flex', flex: 1, alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: 11, padding: 12, textAlign: 'center', fontStyle: 'italic' }}>
+                  Ask questions, ask for synonyms, or highlight text in the editor and type "Rewrite this in third person POV".
+                </div>
+              ) : (
+                chatMessages.map((msg, index) => {
+                  const isUser = msg.role === 'user';
+                  return (
+                    <div 
+                      key={index} 
+                      style={{ 
+                        alignSelf: isUser ? 'flex-end' : 'flex-start',
+                        maxWidth: '90%',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 4
+                      }}
+                    >
+                      <div 
+                        style={{ 
+                          backgroundColor: isUser ? 'var(--accent-purple-dim)' : 'var(--bg-tertiary)',
+                          border: isUser ? '1px solid var(--accent-purple)' : '1px solid var(--border-color)',
+                          color: 'var(--text-primary)',
+                          borderRadius: isUser ? '10px 10px 2px 10px' : '10px 10px 10px 2px',
+                          padding: '8px 12px',
+                          fontSize: 12.5,
+                          lineHeight: 1.4
+                        }}
+                        dangerouslySetInnerHTML={{ __html: parseChatMarkdown(msg.content) }}
+                      />
+                      
+                      {/* Apply to manuscript button next to AI rewrites */}
+                      {!isUser && selectedText && (
+                        <button
+                          className="btn btn-secondary"
+                          style={{ 
+                            alignSelf: 'flex-start', 
+                            padding: '2px 8px', 
+                            fontSize: 10, 
+                            marginTop: 2, 
+                            borderColor: 'var(--accent-purple-dim)', 
+                            color: 'var(--accent-purple)', 
+                            fontWeight: 600,
+                            borderRadius: 4
+                          }}
+                          onClick={() => {
+                            let cleanProse = msg.content;
+                            if (cleanProse.includes('```')) {
+                              const match = cleanProse.match(/```(?:markdown|text|prose)?\n([\s\S]*?)\n```/);
+                              if (match && match[1]) {
+                                cleanProse = match[1];
+                              }
+                            }
+                            replaceSelectedText(cleanProse.trim());
+                            alert("Selection replaced in manuscript!");
+                          }}
+                          title="Replace highlighted selection in manuscript editor with this AI response"
+                        >
+                          ✍️ Replace Selection
+                        </button>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+              {aiRunning && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)', fontSize: 11, fontStyle: 'italic', paddingLeft: 4 }}>
+                  <Loader2 size={12} className="animate-spin" />
+                  <span>Agent is writing...</span>
+                </div>
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            {/* Chat Input Area */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              <input 
+                type="text" 
+                className="form-input" 
+                placeholder="Ask AI or rewrite selection..."
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    handleChatSubmit();
+                  }
+                }}
+                disabled={aiRunning}
+                style={{ fontSize: 12.5 }}
+              />
+              <button 
+                type="button" 
+                className="btn btn-primary"
+                onClick={handleChatSubmit}
+                disabled={aiRunning || !chatInput.trim()}
+                style={{ padding: '6px 12px', fontSize: 12 }}
+              >
+                Send
+              </button>
+            </div>
+
+            {chatMessages.length > 0 && (
+              <button 
+                type="button" 
+                className="btn btn-secondary" 
+                style={{ width: '100%', padding: '4px', fontSize: 10, color: 'var(--text-muted)' }} 
+                onClick={clearChat}
+              >
+                Clear History
+              </button>
             )}
           </div>
         )}

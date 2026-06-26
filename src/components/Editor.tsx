@@ -13,7 +13,8 @@ export const Editor: React.FC = () => {
     pendingMemoryUpdate,
     approveMemory,
     rejectMemory,
-    triggerMemoryGeneration
+    triggerMemoryGeneration,
+    setSelectedText
   } = useStore();
 
   const [splitScreen, setSplitScreen] = useState(false);
@@ -35,6 +36,17 @@ export const Editor: React.FC = () => {
     if (!activeScene) return;
     updateSceneContent(activeScene.id, e.target.value);
     setAutosaveText('Saving...');
+  };
+
+  const handleSelectText = (e: React.SyntheticEvent<HTMLTextAreaElement>) => {
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    if (start !== end) {
+      setSelectedText(textarea.value.substring(start, end));
+    } else {
+      setSelectedText('');
+    }
   };
 
   useEffect(() => {
@@ -165,6 +177,8 @@ export const Editor: React.FC = () => {
             className="editor-textarea"
             value={activeScene.content}
             onChange={handleTextChange}
+            onSelect={handleSelectText}
+            onKeyUp={handleSelectText}
             placeholder="Type your manuscript here. Use standard Markdown formats (# for Headings, ** for bold)."
             autoFocus
           />
