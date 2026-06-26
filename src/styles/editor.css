@@ -1,0 +1,158 @@
+/* Center Editor Panel */
+.center-editor-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-editor);
+  overflow: hidden;
+  height: 100%;
+}
+
+/* Breadcrumbs / Editor Header */
+.editor-header {
+  height: 40px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+}
+
+.breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.breadcrumb-separator {
+  color: var(--text-muted);
+}
+
+.breadcrumb-current {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Split view editor boxes */
+.editors-split-container {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.editor-container {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.editor-container + .editor-container {
+  border-left: 1px solid var(--border-color);
+}
+
+/* Textareas & Writing View */
+.editor-textarea {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  background-color: var(--bg-editor);
+  color: var(--text-primary);
+  border: none;
+  outline: none;
+  resize: none;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.8;
+  padding: 40px 60px;
+  overflow-y: auto;
+}
+
+/* Focus mode adjustments */
+.focus-mode-active .sidebar {
+  display: none !important;
+}
+
+.focus-mode-active .editor-textarea {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 60px 40px;
+}
+
+/* Typewriter Mode: keeps active typing line centered */
+.typewriter-mode-active .editor-textarea {
+  padding-bottom: 50vh;
+}
+
+/* Preview Markdown Panel */
+.editor-preview {
+  flex: 1;
+  padding: 40px 60px;
+  overflow-y: auto;
+  font-family: var(--font-serif);
+  font-size: 16px;
+  line-height: 1.8;
+  color: var(--text-primary);
+  background-color: var(--bg-editor);
+  border-left: 1px solid var(--border-color);
+}
+
+.editor-preview h1 {
+  font-size: 28px;
+  margin-bottom: 24px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 8px;
+}
+
+.editor-preview h2 {
+  font-size: 22px;
+  margin-top: 32px;
+  margin-bottom: 16px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.editor-preview h3 {
+  font-size: 18px;
+  margin-top: 24px;
+  margin-bottom: 12px;
+  font-family: var(--font-sans);
+  font-weight: 600;
+}
+
+.editor-preview p {
+  margin-bottom: 20px;
+}
+
+.editor-preview blockquote {
+  border-left: 4px solid var(--accent-purple);
+  padding-left: 16px;
+  margin: 20px 0;
+  color: var(--text-secondary);
+  font-style: italic;
+}
+
+/* Status Bar */
+.statusbar {
+  height: var(--statusbar-height);
+  background-color: var(--bg-secondary);
+  border-top: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-size: 11px;
+  color: var(--text-muted);
+  user-select: none;
+}

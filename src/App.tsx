@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useParams } from 'react-router-dom';
 import { StoreProvider, useStore } from './store';
-import { LeftSidebar } from './components/LeftSidebar';
+import { LeftSidebar } from './components/left-sidebar/LeftSidebar';
 import { Editor } from './components/Editor';
-import { RightSidebar } from './components/RightSidebar';
+import { RightSidebar } from './components/right-sidebar/RightSidebar';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
