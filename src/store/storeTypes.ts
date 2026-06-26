@@ -3,7 +3,13 @@ import type {
   ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate 
 } from '../types';
 
+/**
+ * Global state store context representing the entire state and actions of NovelSynth.
+ * Consumed by components using the `useStore` hook. Modularity is implemented using custom hooks
+ * under `src/store/hooks/` which are composed in the main `StoreProvider` in `src/store/index.tsx`.
+ */
 export interface StoreContextType {
+  /** Holds the unified client-side project state tree (chapters, scenes, bible, plot threads, notes, memories) */
   project: ProjectState;
   activeSceneId: string | null;
   activeLeftTab: string;

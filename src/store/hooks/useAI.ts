@@ -11,6 +11,11 @@ import {
 } from '../../services/aiService';
 import type { ProjectState, MemoryUpdate } from '../../types';
 
+/**
+ * Custom hook managing AI analysis, prompt contexts, history logs, and interactive chat.
+ * Computes active contexts dynamically based on active scene POV character, location, and power systems.
+ * Connects with `aiService` relays.
+ */
 export const useAI = (
   activeBookId: string | null,
   activeSceneId: string | null,

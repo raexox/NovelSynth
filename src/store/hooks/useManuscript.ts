@@ -2,6 +2,10 @@ import { useRef, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState, Chapter, Scene, SceneMetadata } from '../../types';
 
+/**
+ * Custom hook managing NovelSynth chapters and scenes.
+ * Handles selection, insertion, deletions, and debounced text content updates (1-second delay).
+ */
 export const useManuscript = (
   activeBookId: string | null,
   activeSceneId: string | null,

@@ -4,8 +4,6 @@ import { StoreProvider, useStore } from './store';
 import { LeftSidebar } from './components/LeftSidebar';
 import { Editor } from './components/Editor';
 import { RightSidebar } from './components/RightSidebar';
-import { SearchPanel } from './components/SearchPanel';
-import { VersionHistory } from './components/VersionHistory';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
@@ -276,12 +274,12 @@ const WorkspaceShell: React.FC = () => {
     exportProject,
     importProject,
     updateSettings,
-    closeBook
+    closeBook,
+    activeLeftTab,
+    setLeftTab
   } = useStore();
 
   // Toolbar toggles
-  const [showSearch, setShowSearch] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   
   // Settings Form Inputs
@@ -384,24 +382,32 @@ const WorkspaceShell: React.FC = () => {
           <div style={{ height: 16, width: 1, backgroundColor: 'var(--border-color)' }}></div>
 
           <button 
-            className={`btn-icon ${showSearch ? 'selected' : ''}`} 
+            className={`btn-icon ${(activeLeftTab === 'search' && isLeftSidebarOpen) ? 'selected' : ''}`} 
             onClick={() => {
-              setShowSearch(!showSearch);
-              setShowHistory(false);
+              if (activeLeftTab === 'search' && isLeftSidebarOpen) {
+                toggleLeftSidebar();
+              } else {
+                if (!isLeftSidebarOpen) toggleLeftSidebar();
+                setLeftTab('search');
+              }
             }}
-            style={{ color: showSearch ? 'var(--accent-purple)' : 'var(--text-muted)' }}
+            style={{ color: (activeLeftTab === 'search' && isLeftSidebarOpen) ? 'var(--accent-purple)' : 'var(--text-muted)' }}
             title="Toggle Search Panel"
           >
             <Search size={16} />
           </button>
 
           <button 
-            className={`btn-icon ${showHistory ? 'selected' : ''}`} 
+            className={`btn-icon ${(activeLeftTab === 'history' && isLeftSidebarOpen) ? 'selected' : ''}`} 
             onClick={() => {
-              setShowHistory(!showHistory);
-              setShowSearch(false);
+              if (activeLeftTab === 'history' && isLeftSidebarOpen) {
+                toggleLeftSidebar();
+              } else {
+                if (!isLeftSidebarOpen) toggleLeftSidebar();
+                setLeftTab('history');
+              }
             }}
-            style={{ color: showHistory ? 'var(--accent-purple)' : 'var(--text-muted)' }}
+            style={{ color: (activeLeftTab === 'history' && isLeftSidebarOpen) ? 'var(--accent-purple)' : 'var(--text-muted)' }}
             title="Toggle History Snapshots"
           >
             <History size={16} />
@@ -434,15 +440,6 @@ const WorkspaceShell: React.FC = () => {
         <div className={`sidebar ${isLeftSidebarOpen ? '' : 'collapsed'}`}>
           <LeftSidebar />
         </div>
-
-        {/* Auxiliary panels (Search / History) */}
-        {isLeftSidebarOpen && showSearch && (
-          <SearchPanel />
-        )}
-        
-        {isLeftSidebarOpen && showHistory && (
-          <VersionHistory />
-        )}
 
         {/* Central Writing Canvas */}
         <Editor />

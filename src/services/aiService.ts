@@ -1,5 +1,11 @@
 import type { ProjectState, StoryBible, SceneMetadata } from '../types';
 
+/**
+ * AI Service Client Relay.
+ * Handles downstream API requests to Google Gemini, OpenAI, and OpenRouter.
+ * Implements structured formatting prompts for dialogue analysis, pacing metrics, 
+ * revision diffs, and manuscript context-aware chat.
+ */
 // Helper to make API calls to different providers
 async function callLLM(
   prompt: string,

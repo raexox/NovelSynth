@@ -3,6 +3,11 @@ import type { User } from '@supabase/supabase-js';
 import type { ProjectState, MemoryUpdate } from '../types';
 import type { StoreContextType } from './storeTypes';
 
+/**
+ * Main State Entrypoint for NovelSynth.
+ * Coordinates React state slices and delegates actual business logic actions
+ * to separate hook files inside `src/store/hooks/`.
+ */
 // Modular Hooks
 import { useAuth } from './hooks/useAuth';
 import { useBooks } from './hooks/useBooks';
