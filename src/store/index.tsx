@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import type { User } from '@supabase/supabase-js';
 import type { 
   ProjectState, Chapter, Scene, PlotThread, VersionSnapshot, Note, MemoryUpdate, SceneMetadata 
 } from '../types';
@@ -10,222 +11,26 @@ import {
   getAIResearch, 
   getAIMemoryGeneration 
 } from '../services/aiService';
+import { supabase } from '../services/supabaseClient';
 
-// Default Sample Data to wow the user out-of-the-box
-const INITIAL_STATE: ProjectState = {
-  projectName: "The Echoes of Aetheria",
-  chapters: [
-    { id: "ch-1", title: "Chapter 1: The Whispering Tower", order: 1 },
-    { id: "ch-2", title: "Chapter 2: Silver and Iron", order: 2 },
-    { id: "ch-3", title: "Chapter 3: The Price of Power", order: 3 }
-  ],
-  scenes: [
-    {
-      id: "sc-1",
-      chapterId: "ch-1",
-      title: "Opening the Grimoire",
-      content: `The heavy oak doors of the First Tower creaked shut, sealing Kaelen inside. Dust danced in the shafts of moonlight that pierced the high arched windows. 
-
-He clutched the silver amulet at his chest. His hands were trembling, not from the chill wind that howled through the stone battlements, but from the weight of the book in his satchel. It was the Aether Codex. If the Silver Order discovered he had taken it, his life would be forfeit.
-
-Kaelen placed the book on the obsidian altar. He ran his hand over the gold engravings. "I must find the truth," he whispered. "Before they find me."`,
-      order: 1,
-      status: "finished",
-      wordCount: 112,
-      lastSaved: new Date().toISOString(),
-      metadata: {
-        pov: "Kaelen",
-        date: "1245-10-12",
-        time: "23:00",
-        location: "The First Tower",
-        characters: ["Kaelen"]
-      }
-    },
-    {
-      id: "sc-2",
-      chapterId: "ch-1",
-      title: "Mira's Warning",
-      content: `Mira stepped from the shadows of the pillar. Her black hair was pulled back tightly, framing eyes that had seen too much war.
-
-"You shouldn't have come here, Kaelen," she said. Her voice was flat, devoid of the warmth they had shared as children.
-
-"I had no choice, Mira," Kaelen replied. "The Archmage is lying to us. The power isn't fading—it's being hoarded."
-
-Mira looked at the altar. "If you open that book, you trigger the alarm. The Silver Order will be here in minutes. Even my sword cannot protect you from ten paladins."`,
-      order: 2,
-      status: "finished",
-      wordCount: 105,
-      lastSaved: new Date().toISOString(),
-      metadata: {
-        pov: "Kaelen",
-        date: "1245-10-12",
-        time: "23:15",
-        location: "The First Tower",
-        characters: ["Kaelen", "Mira"]
-      }
-    },
-    {
-      id: "sc-3",
-      chapterId: "ch-2",
-      title: "The Silver Patrol",
-      content: `The rain fell in sheets over the lower city, washing the grime of the blacksmith shops into the gutters. Kaelen pulled his hood lower, ducking into an alleyway as a squad of Silver Order paladins marched past, their armor gleaming despite the storm.
-
-"They're looking for the book," Mira murmured, pressing her back against the brick wall. Her hand rested on the pommel of her rapier.
-
-"We need to get to the canal docks," Kaelen said. "The smuggler said he'd wait until midnight."
-
-Wait, what if they search the canals? The Order controls the ports.`,
-      order: 1,
-      status: "draft",
-      wordCount: 98,
-      lastSaved: new Date().toISOString(),
-      metadata: {
-        pov: "Mira",
-        date: "1245-10-13",
-        time: "21:30",
-        location: "Lower City Slums",
-        characters: ["Kaelen", "Mira"]
-      }
-    }
-  ],
+const EMPTY_PROJECT_STATE: ProjectState = {
+  projectName: '',
+  chapters: [],
+  scenes: [],
   storyBible: {
-    characters: [
-      {
-        id: "char-1",
-        name: "Kaelen",
-        appearance: "Lean, silver hair (formerly black before the Aether surge), stormy grey eyes, wears faded blue robes.",
-        personality: "Obsessive, studious, cautious but driven by a deep need for answers. Terrified of failing.",
-        goals: "To translate the Aether Codex and discover the truth behind the Great Depletion.",
-        fears: "Being consumed by Aether madness; captured by the Silver Order.",
-        relationships: "Mira (Childhood friend, now complicated protector), Archmage Eldrin (Mentor turned enemy).",
-        abilities: "Aether manipulation, script translation, magical detection.",
-        speechStyle: "Formal, precise, occasionally stuttering when anxious.",
-        history: "Raised in the lower slums, taken in by the Academy when his magical potential manifested at age nine.",
-        injuries: "Aether burns covering his right forearm, which he wraps in linen.",
-        secrets: "He is actually the one who triggered the accident that burned the library six years ago.",
-        developmentArc: "Must learn that knowledge without connection is empty, shifting from self-preservation to self-sacrifice."
-      },
-      {
-        id: "char-2",
-        name: "Mira",
-        appearance: "Athletic build, black hair cropped short, sharp facial features, scar across her left cheek.",
-        personality: "Pragmatic, cynical, fiercely loyal, hides her emotions behind sarcastic remarks.",
-        goals: "To keep Kaelen alive and pay off her family's debt to the faction.",
-        fears: "Losing Kaelen; returning to a life of mercenary work in the desert.",
-        relationships: "Kaelen (Protected friend, unspoken bond), Silver Order (Former employers, now sworn enemies).",
-        abilities: "Master swordsmanship, stealth, tracking, urban survival.",
-        speechStyle: "Blunt, short sentences, frequent use of military slang.",
-        history: "Served in the border guard before being dishonorably discharged for disobeying an order to execute prisoners.",
-        injuries: "Old shoulder wound that stiffens in cold weather.",
-        secrets: "She has been secretly feeding information to the Silver Order to keep them away from Kaelen.",
-        developmentArc: "Will have to choose between her loyalty to Kaelen and the safety of her remaining family."
-      }
-    ],
-    locations: [
-      {
-        id: "loc-1",
-        name: "The First Tower",
-        description: "The ancient stone observatory at the center of the Academy. Houses the forbidden archive.",
-        culture: "Reserved for high-ranking scholars; atmosphere is quiet, tense, and smelling of old parchment.",
-        weather: "Perpetually cold, winds howling around the spires.",
-        history: "Built by the first Archmage over the Aether well, it has stood for four hundred years.",
-        landmarks: "The Obsidian Altar, the Grand Astrolabe, the Whispering Archive.",
-        connectedLocations: "Academy Grounds, The Lower City."
-      },
-      {
-        id: "loc-2",
-        name: "Lower City Slums",
-        description: "The crowded, dirty streets beneath the Academy's floating spires. Densely populated.",
-        culture: "Working-class laborers, smugglers, and outcasts. Lawless but with a strict code of survival.",
-        weather: "Humid, smoky, subject to run-off rain from the upper city.",
-        history: "Grew around the canal ports to serve the scholars above.",
-        landmarks: "The Iron Docks, Blacksmith Alley, The Drowned Rat Tavern.",
-        connectedLocations: "The Academy Gates, The Canals."
-      }
-    ],
-    factions: [
-      {
-        id: "fac-1",
-        name: "Silver Order",
-        leader: "High Commander Valerius",
-        members: "Knight-Inquisitors, Paladins, Wardens.",
-        beliefs: "Magic must be strictly controlled, rationed, and guarded. Unregulated magic leads to Aether madness.",
-        allies: "The Grand Academy, The Merchant Guild.",
-        enemies: "The Aether Syndicate, outlaws, rogue mages.",
-        resources: "Pure silver armor (magic-nullifying), state treasury, legal authority."
-      }
-    ],
-    powerSystems: [
-      {
-        id: "pow-1",
-        name: "Aether Magic",
-        rules: "Aether is pulled from the atmosphere. It must pass through a living conduit to manifest as physical force.",
-        limitations: "Conduits can only channel a set volume before their nervous system is damaged.",
-        costs: "Severe exhaustion, nosebleeds, temporary blindness, and permanent scarring (Aether burns).",
-        exceptions: "Ancient artifacts (like the Aether Codex) can channel magic without damaging the user, but require blood activation.",
-        examples: "Lighting a flame, scanning magical threads, creating kinetic shockwaves."
-      }
-    ]
+    characters: [],
+    locations: [],
+    factions: [],
+    powerSystems: []
   },
-  plotThreads: [
-    {
-      id: "pt-1",
-      title: "Who caused the Great Depletion?",
-      description: "The global supply of Aether is shrinking. The Academy blames rogue mages, but Kaelen suspects the Archmage is hoarding it.",
-      type: "mystery",
-      status: "active",
-      startedInSceneId: "sc-1",
-      resolvedInSceneId: "",
-      notes: "The Codex is said to contain the original formulas of the Aether well."
-    },
-    {
-      id: "pt-2",
-      title: "Mira's Secret Deal",
-      description: "Mira is secretly communicating with Valerius of the Silver Order to protect Kaelen from execution.",
-      type: "promise",
-      status: "active",
-      startedInSceneId: "sc-2",
-      resolvedInSceneId: "",
-      notes: "Will Kaelen discover this? How will he react?"
-    }
-  ],
-  snapshots: [
-    {
-      id: "snap-1",
-      sceneId: "sc-1",
-      timestamp: "2026-06-25T15:00:00.000Z",
-      description: "Initial Draft of Scene 1",
-      content: `The doors shut. Kaelen was inside the Tower. It was very dusty. Kaelen held his amulet. It was silver. He was scared because he took the book.
-"I need to read this," he said.`
-    }
-  ],
-  notes: [
-    {
-      id: "note-1",
-      title: "Pacing Ideas",
-      content: "Ensure Chapter 2 moves faster than Chapter 1. Introduce the smuggler Jax in Chapter 3.",
-      lastUpdated: new Date().toISOString()
-    }
-  ],
-  memoryUpdates: [
-    {
-      sceneId: "sc-1",
-      summary: "Kaelen sneaks into the First Tower with the stolen Aether Codex and places it on the obsidian altar, fearing discovery by the Silver Order.",
-      events: ["Kaelen enters the First Tower archive.", "He places the Aether Codex on the altar.", "He resolves to find the truth."],
-      newFacts: ["Kaelen stole the Aether Codex from the Silver Order.", "The Codex is engraved in gold."],
-      revealedInfo: ["Kaelen stole the book to discover the truth before being caught."],
-      unresolvedQuestions: ["What lies inside the Aether Codex?", "How will the Academy react to its theft?"],
-      emotionalChanges: ["Kaelen is terrified but determined."],
-      characterDevelopment: ["Kaelen takes his first active step of rebellion against the Academy."],
-      timelineUpdates: ["Set on 1245-10-12 at 23:00."],
-      locationUpdates: ["Set in The First Tower observatory."],
-      status: "approved"
-    }
-  ],
+  plotThreads: [],
+  snapshots: [],
+  notes: [],
+  memoryUpdates: [],
   settings: {
-    apiKey: "",
-    model: "gemini-1.5-flash",
-    provider: "gemini",
+    apiKey: '',
+    model: 'gemini-1.5-flash',
+    provider: 'gemini',
     aiTemperature: 0.7,
     typewriterMode: false,
     focusMode: false,
@@ -244,6 +49,13 @@ interface StoreContextType {
   activeBibleCategory: 'characters' | 'locations' | 'factions' | 'powerSystems';
   activeBibleItemId: string | null;
   
+  // Auth & Hierarchy States
+  user: User | null;
+  authLoading: boolean;
+  booksList: any[];
+  activeBookId: string | null;
+  booksLoading: boolean;
+  
   // AI States
   aiRunning: boolean;
   revisionSuggestions: { original: string; revised: string; explanation: string; diffHtml: string } | null;
@@ -256,7 +68,16 @@ interface StoreContextType {
   aiError: string | null;
   clearAIError: () => void;
 
-  // Actions
+  // Auth & Book Actions
+  signUp: (email: string, password: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<any>;
+  signOut: () => Promise<any>;
+  createBook: (name: string) => Promise<void>;
+  loadBook: (bookId: string) => Promise<void>;
+  closeBook: () => void;
+  fetchBooksList: () => Promise<void>;
+
+  // IDE Actions
   updateSceneContent: (id: string, content: string) => void;
   selectScene: (id: string) => void;
   addChapter: (title: string) => void;
@@ -303,19 +124,21 @@ interface StoreContextType {
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [project, setProject] = useState<ProjectState>(() => {
-    const saved = localStorage.getItem('novelsynth_project');
-    return saved ? JSON.parse(saved) : INITIAL_STATE;
-  });
-  const [activeSceneId, setActiveSceneId] = useState<string | null>(() => {
-    return INITIAL_STATE.scenes[2].id; // Default to scene 3 which is in draft
-  });
+  const [project, setProject] = useState<ProjectState>(EMPTY_PROJECT_STATE);
+  const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [activeLeftTab, setActiveLeftTab] = useState<string>('novel');
   const [activeRightTab, setActiveRightTab] = useState<string>('revision');
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'powerSystems'>('characters');
   const [activeBibleItemId, setBibleItemId] = useState<string | null>(null);
+
+  // Auth & Hierarchy States
+  const [user, setUser] = useState<User | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [booksList, setBooksList] = useState<any[]>([]);
+  const [activeBookId, setActiveBookId] = useState<string | null>(null);
+  const [booksLoading, setBooksLoading] = useState(false);
 
   // AI & Analysis States
   const [aiRunning, setAiRunning] = useState(false);
@@ -330,10 +153,299 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
 
   const clearAIError = () => setAiError(null);
 
-  // Auto-Save
+  // Debounce timeouts refs
+  const sceneTimeoutRef = useRef<{ [key: string]: any }>({});
+  const noteTimeoutRef = useRef<{ [key: string]: any }>({});
+
+  // Clean up timeouts on unmount
   useEffect(() => {
-    localStorage.setItem('novelsynth_project', JSON.stringify(project));
-  }, [project]);
+    return () => {
+      Object.values(sceneTimeoutRef.current).forEach(clearTimeout);
+      Object.values(noteTimeoutRef.current).forEach(clearTimeout);
+    };
+  }, []);
+
+  // Auth Lifecycle checking
+  useEffect(() => {
+    supabase.auth.getSession().then((res: any) => {
+      const session = res.data?.session;
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event: any, session: any) => {
+      setUser(session?.user ?? null);
+      setAuthLoading(false);
+      if (!session) {
+        // Logged out
+        setActiveBookId(null);
+        setProject(EMPTY_PROJECT_STATE);
+        setBooksList([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Fetch books list when user changes
+  useEffect(() => {
+    if (user) {
+      fetchBooksList();
+    } else {
+      setBooksList([]);
+    }
+  }, [user]);
+
+  const fetchBooksList = async () => {
+    if (!user) return;
+    try {
+      const { data: books, error } = await supabase
+        .from('books')
+        .select('*')
+        .order('updated_at', { ascending: false });
+      
+      if (error) throw error;
+
+      // Fetch count of chapters, scenes, and word_count aggregates
+      const { data: scenesCountData } = await supabase
+        .from('scenes')
+        .select('book_id, word_count');
+      
+      const { data: chaptersCountData } = await supabase
+        .from('chapters')
+        .select('book_id');
+
+      const booksWithCounts = (books || []).map((book: any) => {
+        const bookScenes = (scenesCountData || []).filter((s: any) => s.book_id === book.id);
+        const bookChapters = (chaptersCountData || []).filter((c: any) => c.book_id === book.id);
+        const totalWordCount = bookScenes.reduce((sum: number, s: any) => sum + (s.word_count || 0), 0);
+        return {
+          ...book,
+          sceneCount: bookScenes.length,
+          chapterCount: bookChapters.length,
+          wordCount: totalWordCount
+        };
+      });
+
+      setBooksList(booksWithCounts);
+    } catch (err) {
+      console.error('Failed to fetch books list:', err);
+    }
+  };
+
+  // Auth Actions
+  const signUp = async (email: string, password: string) => {
+    return await supabase.auth.signUp({ email, password });
+  };
+
+  const signIn = async (email: string, password: string) => {
+    return await supabase.auth.signInWithPassword({ email, password });
+  };
+
+  const signOut = async () => {
+    const res = await supabase.auth.signOut();
+    setUser(null);
+    setActiveBookId(null);
+    setBooksList([]);
+    setProject(EMPTY_PROJECT_STATE);
+    return res;
+  };
+
+  // Hierarchy Actions
+  const createBook = async (name: string) => {
+    if (!user) return;
+    try {
+      const { data, error } = await supabase
+        .from('books')
+        .insert({
+          user_id: user.id,
+          name
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
+      await fetchBooksList();
+      if (data) {
+        await loadBook(data.id);
+      }
+    } catch (err: any) {
+      console.error('Failed to create book:', err);
+      alert('Error creating book: ' + (err.message || JSON.stringify(err)));
+    }
+  };
+
+  const loadBook = async (bookId: string) => {
+    setBooksLoading(true);
+    try {
+      const { data: bookData, error: bookError } = await supabase
+        .from('books')
+        .select('name, settings')
+        .eq('id', bookId)
+        .single();
+      
+      if (bookError || !bookData) throw bookError || new Error('Book not found');
+
+      const { data: chaptersData, error: chaptersError } = await supabase
+        .from('chapters')
+        .select('id, title, order_index')
+        .eq('book_id', bookId)
+        .order('order_index', { ascending: true });
+      
+      if (chaptersError) throw chaptersError;
+
+      const { data: scenesData, error: scenesError } = await supabase
+        .from('scenes')
+        .select('id, chapter_id, title, content, order_index, status, word_count, metadata, updated_at, created_at')
+        .eq('book_id', bookId)
+        .order('order_index', { ascending: true });
+
+      if (scenesError) throw scenesError;
+
+      const { data: bibleData, error: bibleError } = await supabase
+        .from('story_bible_items')
+        .select('id, category, name, data')
+        .eq('book_id', bookId);
+
+      if (bibleError) throw bibleError;
+
+      const { data: plotData, error: plotError } = await supabase
+        .from('plot_threads')
+        .select('id, title, description, type, status, notes, started_in_scene_id, resolved_in_scene_id')
+        .eq('book_id', bookId);
+
+      if (plotError) throw plotError;
+
+      const { data: notesData, error: notesError } = await supabase
+        .from('notes')
+        .select('id, title, content, updated_at')
+        .eq('book_id', bookId);
+
+      if (notesError) throw notesError;
+
+      const { data: memoryData, error: memoryError } = await supabase
+        .from('memory_updates')
+        .select('id, scene_id, summary, events, new_facts, revealed_info, unresolved_questions, emotional_changes, character_development, timeline_updates, location_updates, status')
+        .eq('book_id', bookId);
+
+      if (memoryError) throw memoryError;
+
+      const { data: snapshotData, error: snapshotError } = await supabase
+        .from('snapshots')
+        .select('id, scene_id, timestamp, description, content')
+        .eq('book_id', bookId)
+        .order('timestamp', { ascending: false });
+
+      if (snapshotError) throw snapshotError;
+
+      // Mapping from DB columns (snake_case) to typescript properties (camelCase)
+      const chapters: Chapter[] = (chaptersData || []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        order: r.order_index
+      }));
+
+      const scenes: Scene[] = (scenesData || []).map((r: any) => ({
+        id: r.id,
+        chapterId: r.chapter_id,
+        title: r.title,
+        content: r.content,
+        order: r.order_index,
+        status: r.status as any,
+        wordCount: r.word_count,
+        lastSaved: r.updated_at || r.created_at || new Date().toISOString(),
+        metadata: r.metadata as any
+      }));
+
+      const storyBible = {
+        characters: [] as any[],
+        locations: [] as any[],
+        factions: [] as any[],
+        powerSystems: [] as any[]
+      };
+
+      (bibleData || []).forEach((r: any) => {
+        const cat = r.category as 'characters' | 'locations' | 'factions' | 'powerSystems';
+        storyBible[cat].push({
+          id: r.id,
+          name: r.name,
+          ...(r.data || {})
+        });
+      });
+
+      const plotThreads: PlotThread[] = (plotData || []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        type: r.type as any,
+        status: r.status as any,
+        startedInSceneId: r.started_in_scene_id || '',
+        resolvedInSceneId: r.resolved_in_scene_id || '',
+        notes: r.notes || ''
+      }));
+
+      const notes: Note[] = (notesData || []).map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        content: r.content,
+        lastUpdated: r.updated_at || new Date().toISOString()
+      }));
+
+      const memoryUpdates: MemoryUpdate[] = (memoryData || []).map((r: any) => ({
+        sceneId: r.scene_id,
+        summary: r.summary,
+        events: r.events || [],
+        newFacts: r.new_facts || [],
+        revealedInfo: r.revealed_info || [],
+        unresolvedQuestions: r.unresolved_questions || [],
+        emotionalChanges: r.emotional_changes || [],
+        characterDevelopment: r.character_development || [],
+        timelineUpdates: r.timeline_updates || [],
+        locationUpdates: r.location_updates || [],
+        status: r.status as any
+      }));
+
+      const snapshots: VersionSnapshot[] = (snapshotData || []).map((r: any) => ({
+        id: r.id,
+        sceneId: r.scene_id,
+        timestamp: r.timestamp,
+        description: r.description,
+        content: r.content
+      }));
+
+      const loadedProject: ProjectState = {
+        projectName: bookData.name,
+        chapters,
+        scenes,
+        storyBible,
+        plotThreads,
+        notes,
+        memoryUpdates,
+        snapshots,
+        settings: bookData.settings as any
+      };
+
+      setProject(loadedProject);
+      setActiveBookId(bookId);
+
+      if (scenes.length > 0) {
+        setActiveSceneId(scenes[0].id);
+      } else {
+        setActiveSceneId(null);
+      }
+    } catch (err) {
+      console.error('Failed to load book:', err);
+      alert('Error loading book details.');
+    } finally {
+      setBooksLoading(false);
+    }
+  };
+
+  const closeBook = () => {
+    setActiveBookId(null);
+    setProject(EMPTY_PROJECT_STATE);
+  };
 
   // Load Active Contexts based on characters and locations mentioned in active scene
   useEffect(() => {
@@ -380,6 +492,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   const updateSceneContent = (id: string, content: string) => {
+    // 1. Update React state instantly
     setProject(prev => {
       const updatedScenes = prev.scenes.map(s => {
         if (s.id === id) {
@@ -394,85 +507,183 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       });
       return { ...prev, scenes: updatedScenes };
     });
+
+    // 2. Debounce writing to Supabase
+    if (sceneTimeoutRef.current[id]) {
+      clearTimeout(sceneTimeoutRef.current[id]);
+    }
+
+    sceneTimeoutRef.current[id] = setTimeout(async () => {
+      const wordCount = content.split(/\s+/).filter(Boolean).length;
+      await supabase
+        .from('scenes')
+        .update({
+          content,
+          word_count: wordCount,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', id);
+    }, 1000);
   };
 
-  const addChapter = (title: string) => {
-    setProject(prev => {
+  const addChapter = async (title: string) => {
+    if (!activeBookId) return;
+    try {
+      const order = project.chapters.length + 1;
+      const { data, error } = await supabase
+        .from('chapters')
+        .insert({
+          book_id: activeBookId,
+          title,
+          order_index: order
+        })
+        .select()
+        .single();
+      
+      if (error) throw error;
+      
       const newCh: Chapter = {
-        id: `ch-${Date.now()}`,
-        title,
-        order: prev.chapters.length + 1
+        id: data.id,
+        title: data.title,
+        order: data.order_index
       };
-      return {
+
+      setProject(prev => ({
         ...prev,
         chapters: [...prev.chapters, newCh]
-      };
-    });
+      }));
+    } catch (err) {
+      console.error('Failed to add chapter:', err);
+    }
   };
 
-  const addScene = (chapterId: string, title: string) => {
-    const id = `sc-${Date.now()}`;
-    setProject(prev => {
-      const chapterScenes = prev.scenes.filter(s => s.chapterId === chapterId);
-      const newSc: Scene = {
-        id,
-        chapterId,
-        title,
-        content: `Start writing your new scene...`,
-        order: chapterScenes.length + 1,
-        status: 'draft',
-        wordCount: 5,
-        lastSaved: new Date().toISOString(),
-        metadata: {
-          pov: prev.storyBible.characters[0]?.name || "Author",
-          date: new Date().toISOString().split('T')[0],
-          time: "12:00",
-          location: prev.storyBible.locations[0]?.name || "Default Location",
-          characters: []
-        }
+  const addScene = async (chapterId: string, title: string) => {
+    if (!activeBookId) return;
+    try {
+      const chapterScenes = project.scenes.filter(s => s.chapterId === chapterId);
+      const order = chapterScenes.length + 1;
+      
+      const defaultMetadata = {
+        pov: project.storyBible.characters[0]?.name || "Author",
+        date: new Date().toISOString().split('T')[0],
+        time: "12:00",
+        location: project.storyBible.locations[0]?.name || "Default Location",
+        characters: []
       };
-      return {
+
+      const { data, error } = await supabase
+        .from('scenes')
+        .insert({
+          book_id: activeBookId,
+          chapter_id: chapterId,
+          title,
+          content: `Start writing your new scene...`,
+          order_index: order,
+          status: 'draft',
+          metadata: defaultMetadata,
+          word_count: 5
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newSc: Scene = {
+        id: data.id,
+        chapterId: data.chapter_id,
+        title: data.title,
+        content: data.content,
+        order: data.order_index,
+        status: data.status as any,
+        wordCount: data.word_count,
+        lastSaved: data.updated_at || data.created_at || new Date().toISOString(),
+        metadata: data.metadata as any
+      };
+
+      setProject(prev => ({
         ...prev,
         scenes: [...prev.scenes, newSc]
-      };
-    });
-    setActiveSceneId(id);
-  };
-
-  const deleteScene = (id: string) => {
-    setProject(prev => ({
-      ...prev,
-      scenes: prev.scenes.filter(s => s.id !== id)
-    }));
-    if (activeSceneId === id) {
-      setActiveSceneId(null);
+      }));
+      setActiveSceneId(data.id);
+    } catch (err) {
+      console.error('Failed to add scene:', err);
     }
   };
 
-  const deleteChapter = (id: string) => {
-    setProject(prev => ({
-      ...prev,
-      chapters: prev.chapters.filter(c => c.id !== id),
-      scenes: prev.scenes.filter(s => s.chapterId !== id)
-    }));
-    if (project.scenes.find(s => s.chapterId === id)?.id === activeSceneId) {
-      setActiveSceneId(null);
+  const deleteScene = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('scenes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        scenes: prev.scenes.filter(s => s.id !== id)
+      }));
+      if (activeSceneId === id) {
+        setActiveSceneId(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete scene:', err);
     }
   };
 
-  const updateSceneMetadata = (id: string, metadata: Partial<SceneMetadata>) => {
-    setProject(prev => {
-      const updated = prev.scenes.map(s => {
-        if (s.id === id) {
-          return {
-            ...s,
-            metadata: { ...s.metadata, ...metadata }
-          };
-        }
-        return s;
+  const deleteChapter = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('chapters')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        chapters: prev.chapters.filter(c => c.id !== id),
+        scenes: prev.scenes.filter(s => s.chapterId !== id)
+      }));
+      if (project.scenes.find(s => s.chapterId === id)?.id === activeSceneId) {
+        setActiveSceneId(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete chapter:', err);
+    }
+  };
+
+  const updateSceneMetadata = async (id: string, metadata: Partial<SceneMetadata>) => {
+    try {
+      const currentScene = project.scenes.find(s => s.id === id);
+      if (!currentScene) return;
+
+      const mergedMetadata = { ...currentScene.metadata, ...metadata };
+
+      const { error } = await supabase
+        .from('scenes')
+        .update({
+          metadata: mergedMetadata
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => {
+        const updated = prev.scenes.map(s => {
+          if (s.id === id) {
+            return {
+              ...s,
+              metadata: mergedMetadata
+            };
+          }
+          return s;
+        });
+        return { ...prev, scenes: updated };
       });
-      return { ...prev, scenes: updated };
-    });
+    } catch (err) {
+      console.error('Failed to update scene metadata:', err);
+    }
   };
 
   const setLeftTab = (tab: string) => setActiveLeftTab(tab);
@@ -484,93 +695,234 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setBibleItemId(null);
   };
 
-  const updateBibleItem = (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
-    setProject(prev => {
-      const updatedCategory = (prev.storyBible[category] as any[]).map((i: any) => i.id === item.id ? item : i);
-      return {
-        ...prev,
-        storyBible: {
-          ...prev.storyBible,
-          [category]: updatedCategory
-        }
-      };
-    });
-  };
+  const updateBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
+    try {
+      const { id, name, ...data } = item;
+      const { error } = await supabase
+        .from('story_bible_items')
+        .update({
+          name,
+          data
+        })
+        .eq('id', id);
 
-  const addBibleItem = (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
-    const newItem = { ...item, id: `${category.substring(0, 4)}-${Date.now()}` };
-    setProject(prev => ({
-      ...prev,
-      storyBible: {
-        ...prev.storyBible,
-        [category]: [...prev.storyBible[category], newItem]
-      }
-    }));
-    setBibleItemId(newItem.id);
-  };
+      if (error) throw error;
 
-  const deleteBibleItem = (category: 'characters' | 'locations' | 'factions' | 'powerSystems', id: string) => {
-    setProject(prev => ({
-      ...prev,
-      storyBible: {
-        ...prev.storyBible,
-        [category]: (prev.storyBible[category] as any[]).filter((i: any) => i.id !== id)
-      }
-    }));
-    if (activeBibleItemId === id) {
-      setBibleItemId(null);
+      setProject(prev => {
+        const updatedCategory = (prev.storyBible[category] as any[]).map((i: any) => i.id === item.id ? item : i);
+        return {
+          ...prev,
+          storyBible: {
+            ...prev.storyBible,
+            [category]: updatedCategory
+          }
+        };
+      });
+    } catch (err) {
+      console.error('Failed to update bible item:', err);
     }
   };
 
-  const addPlotThread = (thread: Partial<PlotThread>) => {
-    const newThread: PlotThread = {
-      id: `pt-${Date.now()}`,
-      title: thread.title || "New Plot Thread",
-      description: thread.description || "",
-      type: thread.type || "mystery",
-      status: thread.status || "active",
-      startedInSceneId: activeSceneId || "",
-      resolvedInSceneId: thread.resolvedInSceneId || "",
-      notes: thread.notes || ""
-    };
-    setProject(prev => ({
-      ...prev,
-      plotThreads: [...prev.plotThreads, newThread]
-    }));
+  const addBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
+    if (!activeBookId) return;
+    try {
+      const { id, name, ...data } = item;
+      const { data: inserted, error } = await supabase
+        .from('story_bible_items')
+        .insert({
+          book_id: activeBookId,
+          category,
+          name: name || `New ${category}`,
+          data
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newItem = {
+        id: inserted.id,
+        name: inserted.name,
+        ...(inserted.data || {})
+      };
+
+      setProject(prev => ({
+        ...prev,
+        storyBible: {
+          ...prev.storyBible,
+          [category]: [...prev.storyBible[category], newItem]
+        }
+      }));
+      setBibleItemId(inserted.id);
+    } catch (err) {
+      console.error('Failed to add bible item:', err);
+    }
   };
 
-  const updatePlotThread = (thread: PlotThread) => {
-    setProject(prev => ({
-      ...prev,
-      plotThreads: prev.plotThreads.map(t => t.id === thread.id ? thread : t)
-    }));
+  const deleteBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', id: string) => {
+    try {
+      const { error } = await supabase
+        .from('story_bible_items')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        storyBible: {
+          ...prev.storyBible,
+          [category]: (prev.storyBible[category] as any[]).filter((i: any) => i.id !== id)
+        }
+      }));
+      if (activeBibleItemId === id) {
+        setBibleItemId(null);
+      }
+    } catch (err) {
+      console.error('Failed to delete bible item:', err);
+    }
   };
 
-  const addNote = (title: string, content: string) => {
-    const newNote: Note = {
-      id: `note-${Date.now()}`,
-      title,
-      content,
-      lastUpdated: new Date().toISOString()
-    };
-    setProject(prev => ({
-      ...prev,
-      notes: [...prev.notes, newNote]
-    }));
+  const addPlotThread = async (thread: Partial<PlotThread>) => {
+    if (!activeBookId) return;
+    try {
+      const startedInSceneId = activeSceneId || null;
+      const { data, error } = await supabase
+        .from('plot_threads')
+        .insert({
+          book_id: activeBookId,
+          title: thread.title || "New Plot Thread",
+          description: thread.description || "",
+          type: thread.type || "mystery",
+          status: thread.status || "active",
+          notes: thread.notes || "",
+          started_in_scene_id: startedInSceneId,
+          resolved_in_scene_id: thread.resolvedInSceneId || null
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newThread: PlotThread = {
+        id: data.id,
+        title: data.title,
+        description: data.description,
+        type: data.type as any,
+        status: data.status as any,
+        startedInSceneId: data.started_in_scene_id || "",
+        resolvedInSceneId: data.resolved_in_scene_id || "",
+        notes: data.notes || ""
+      };
+
+      setProject(prev => ({
+        ...prev,
+        plotThreads: [...prev.plotThreads, newThread]
+      }));
+    } catch (err) {
+      console.error('Failed to add plot thread:', err);
+    }
+  };
+
+  const updatePlotThread = async (thread: PlotThread) => {
+    try {
+      const { error } = await supabase
+        .from('plot_threads')
+        .update({
+          title: thread.title,
+          description: thread.description,
+          type: thread.type,
+          status: thread.status,
+          notes: thread.notes,
+          started_in_scene_id: thread.startedInSceneId || null,
+          resolved_in_scene_id: thread.resolvedInSceneId || null
+        })
+        .eq('id', thread.id);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        plotThreads: prev.plotThreads.map(t => t.id === thread.id ? thread : t)
+      }));
+    } catch (err) {
+      console.error('Failed to update plot thread:', err);
+    }
+  };
+
+  const addNote = async (title: string, content: string) => {
+    if (!activeBookId) return;
+    try {
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          book_id: activeBookId,
+          title,
+          content
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const newNote: Note = {
+        id: data.id,
+        title: data.title,
+        content: data.content,
+        lastUpdated: data.updated_at || new Date().toISOString()
+      };
+
+      setProject(prev => ({
+        ...prev,
+        notes: [...prev.notes, newNote]
+      }));
+    } catch (err) {
+      console.error('Failed to add note:', err);
+    }
   };
 
   const updateNote = (id: string, updates: Partial<Note>) => {
+    // 1. Update React state instantly
     setProject(prev => ({
       ...prev,
       notes: prev.notes.map(n => n.id === id ? { ...n, ...updates, lastUpdated: new Date().toISOString() } : n)
     }));
+
+    // 2. Debounce writing to Supabase if content or title is changed
+    if (updates.content !== undefined || updates.title !== undefined) {
+      if (noteTimeoutRef.current[id]) {
+        clearTimeout(noteTimeoutRef.current[id]);
+      }
+
+      noteTimeoutRef.current[id] = setTimeout(async () => {
+        const dbUpdates: any = { updated_at: new Date().toISOString() };
+        if (updates.title !== undefined) dbUpdates.title = updates.title;
+        if (updates.content !== undefined) dbUpdates.content = updates.content;
+        
+        await supabase
+          .from('notes')
+          .update(dbUpdates)
+          .eq('id', id);
+      }, 1000);
+    }
   };
 
-  const deleteNote = (id: string) => {
-    setProject(prev => ({
-      ...prev,
-      notes: prev.notes.filter(n => n.id !== id)
-    }));
+  const deleteNote = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', id);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        notes: prev.notes.filter(n => n.id !== id)
+      }));
+    } catch (err) {
+      console.error('Failed to delete note:', err);
+    }
   };
 
   const clearAISuggestions = () => {
@@ -721,36 +1073,75 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
   };
 
-  const approveMemory = () => {
-    if (!pendingMemoryUpdate) return;
+  const approveMemory = async () => {
+    if (!pendingMemoryUpdate || !activeBookId) return;
     
-    setProject(prev => {
-      const approved = { ...pendingMemoryUpdate, status: 'approved' as const };
-      const updatedMemories = [...prev.memoryUpdates.filter(m => m.sceneId !== approved.sceneId), approved];
+    try {
+      const { error } = await supabase
+        .from('memory_updates')
+        .upsert({
+          book_id: activeBookId,
+          scene_id: pendingMemoryUpdate.sceneId,
+          summary: pendingMemoryUpdate.summary,
+          events: pendingMemoryUpdate.events,
+          new_facts: pendingMemoryUpdate.newFacts,
+          revealed_info: pendingMemoryUpdate.revealedInfo,
+          unresolved_questions: pendingMemoryUpdate.unresolvedQuestions,
+          emotional_changes: pendingMemoryUpdate.emotionalChanges,
+          character_development: pendingMemoryUpdate.characterDevelopment,
+          timeline_updates: pendingMemoryUpdate.timelineUpdates,
+          location_updates: pendingMemoryUpdate.locationUpdates,
+          status: 'approved'
+        }, { onConflict: 'book_id,scene_id' });
+
+      if (error) throw error;
       
-      const scene = prev.scenes.find(s => s.id === approved.sceneId);
+      const scene = project.scenes.find(s => s.id === pendingMemoryUpdate.sceneId);
       const povCharName = scene?.metadata.pov || '';
       
-      const updatedCharacters = prev.storyBible.characters.map(char => {
-        if (char.name.toLowerCase() === povCharName.toLowerCase()) {
-          return {
-            ...char,
-            history: char.history + `\n- Scene "${scene?.title}" Memory Summary: ${approved.summary}`
-          };
-        }
-        return char;
-      });
+      const charToUpdate = project.storyBible.characters.find(c => c.name.toLowerCase() === povCharName.toLowerCase());
+      
+      if (charToUpdate) {
+        const updatedHistory = charToUpdate.history + `\n- Scene "${scene?.title}" Memory Summary: ${pendingMemoryUpdate.summary}`;
+        const updatedChar = { ...charToUpdate, history: updatedHistory };
+        
+        const { id: charId, name, ...charData } = updatedChar;
+        await supabase
+          .from('story_bible_items')
+          .update({
+            name,
+            data: charData
+          })
+          .eq('id', charId);
+      }
 
-      return {
-        ...prev,
-        memoryUpdates: updatedMemories,
-        storyBible: {
-          ...prev.storyBible,
-          characters: updatedCharacters
-        }
-      };
-    });
-    setPendingMemoryUpdate(null);
+      setProject(prev => {
+        const approved = { ...pendingMemoryUpdate, status: 'approved' as const };
+        const updatedMemories = [...prev.memoryUpdates.filter(m => m.sceneId !== approved.sceneId), approved];
+        
+        const updatedCharacters = prev.storyBible.characters.map(char => {
+          if (char.name.toLowerCase() === povCharName.toLowerCase()) {
+            return {
+              ...char,
+              history: char.history + `\n- Scene "${scene?.title}" Memory Summary: ${approved.summary}`
+            };
+          }
+          return char;
+        });
+
+        return {
+          ...prev,
+          memoryUpdates: updatedMemories,
+          storyBible: {
+            ...prev.storyBible,
+            characters: updatedCharacters
+          }
+        };
+      });
+      setPendingMemoryUpdate(null);
+    } catch (err) {
+      console.error('Failed to approve memory:', err);
+    }
   };
 
   const rejectMemory = () => {
@@ -758,43 +1149,75 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
 
   // Version Snapshots
-  const takeSnapshot = (description: string) => {
-    if (!activeSceneId) return;
+  const takeSnapshot = async (description: string) => {
+    if (!activeBookId || !activeSceneId) return;
     const scene = project.scenes.find(s => s.id === activeSceneId);
     if (!scene) return;
 
-    const newSnapshot: VersionSnapshot = {
-      id: `snap-${Date.now()}`,
-      sceneId: activeSceneId,
-      timestamp: new Date().toISOString(),
-      description,
-      content: scene.content
-    };
+    try {
+      const { data, error } = await supabase
+        .from('snapshots')
+        .insert({
+          book_id: activeBookId,
+          scene_id: activeSceneId,
+          description,
+          content: scene.content
+        })
+        .select()
+        .single();
 
-    setProject(prev => ({
-      ...prev,
-      snapshots: [newSnapshot, ...prev.snapshots]
-    }));
+      if (error) throw error;
+
+      const newSnapshot: VersionSnapshot = {
+        id: data.id,
+        sceneId: data.scene_id,
+        timestamp: data.timestamp,
+        description: data.description,
+        content: data.content
+      };
+
+      setProject(prev => ({
+        ...prev,
+        snapshots: [newSnapshot, ...prev.snapshots]
+      }));
+    } catch (err) {
+      console.error('Failed to take snapshot:', err);
+    }
   };
 
-  const restoreSnapshot = (id: string) => {
+  const restoreSnapshot = async (id: string) => {
     const snapshot = project.snapshots.find(s => s.id === id);
     if (!snapshot) return;
 
-    setProject(prev => {
-      const updated = prev.scenes.map(s => {
-        if (s.id === snapshot.sceneId) {
-          return {
-            ...s,
-            content: snapshot.content,
-            wordCount: snapshot.content.split(/\s+/).filter(Boolean).length,
-            lastSaved: new Date().toISOString()
-          };
-        }
-        return s;
+    try {
+      const { error } = await supabase
+        .from('scenes')
+        .update({
+          content: snapshot.content,
+          word_count: snapshot.content.split(/\s+/).filter(Boolean).length,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', snapshot.sceneId);
+
+      if (error) throw error;
+
+      setProject(prev => {
+        const updated = prev.scenes.map(s => {
+          if (s.id === snapshot.sceneId) {
+            return {
+              ...s,
+              content: snapshot.content,
+              wordCount: snapshot.content.split(/\s+/).filter(Boolean).length,
+              lastSaved: new Date().toISOString()
+            };
+          }
+          return s;
+        });
+        return { ...prev, scenes: updated };
       });
-      return { ...prev, scenes: updated };
-    });
+    } catch (err) {
+      console.error('Failed to restore snapshot:', err);
+    }
   };
 
   // Import / Export
@@ -808,27 +1231,149 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     downloadAnchor.remove();
   };
 
-  const importProject = (data: string) => {
+  const importProject = async (data: string) => {
+    if (!activeBookId) return;
     try {
       const parsed = JSON.parse(data);
       if (parsed.projectName && parsed.scenes) {
-        setProject(parsed);
-        if (parsed.scenes.length > 0) {
-          setActiveSceneId(parsed.scenes[0].id);
+        // Warning: this imports into current book project!
+        // Delete all old chapters and scenes for this book first
+        await supabase.from('chapters').delete().eq('book_id', activeBookId);
+        await supabase.from('story_bible_items').delete().eq('book_id', activeBookId);
+        await supabase.from('plot_threads').delete().eq('book_id', activeBookId);
+        await supabase.from('notes').delete().eq('book_id', activeBookId);
+        await supabase.from('memory_updates').delete().eq('book_id', activeBookId);
+        await supabase.from('snapshots').delete().eq('book_id', activeBookId);
+
+        // Update book name
+        await supabase.from('books').update({ name: parsed.projectName }).eq('id', activeBookId);
+
+        // Load imports
+        // Chapters
+        for (const ch of (parsed.chapters || [])) {
+          await supabase.from('chapters').insert({
+            id: ch.id.startsWith('ch-') && ch.id.length > 20 ? undefined : ch.id, // generate uuid if it's mock
+            book_id: activeBookId,
+            title: ch.title,
+            order_index: ch.order
+          });
         }
+
+        // Fetch back imported chapters to map their IDs in scenes
+        const { data: dbChs } = await supabase.from('chapters').select('id, title, order_index').eq('book_id', activeBookId);
+
+        // Scenes
+        for (const sc of (parsed.scenes || [])) {
+          // find matching chapter in db (either by title or old id)
+          const matchedCh = dbChs?.find((c: any) => c.order_index === parsed.chapters.find((ch: any) => ch.id === sc.chapterId)?.order);
+          await supabase.from('scenes').insert({
+            id: sc.id.startsWith('sc-') && sc.id.length > 20 ? undefined : sc.id,
+            book_id: activeBookId,
+            chapter_id: matchedCh?.id || dbChs?.[0]?.id,
+            title: sc.title,
+            content: sc.content,
+            order_index: sc.order,
+            status: sc.status,
+            word_count: sc.wordCount,
+            metadata: sc.metadata
+          });
+        }
+
+        // Bible items
+        const categories: Array<'characters' | 'locations' | 'factions' | 'powerSystems'> = ['characters', 'locations', 'factions', 'powerSystems'];
+        for (const cat of categories) {
+          const items = parsed.storyBible?.[cat] || [];
+          for (const item of items) {
+            const { id, name, ...data } = item;
+            await supabase.from('story_bible_items').insert({
+              id: id.length > 20 ? undefined : id,
+              book_id: activeBookId,
+              category: cat,
+              name: name || `New ${cat}`,
+              data
+            });
+          }
+        }
+
+        // Plot threads
+        for (const pt of (parsed.plotThreads || [])) {
+          await supabase.from('plot_threads').insert({
+            id: pt.id.length > 20 ? undefined : pt.id,
+            book_id: activeBookId,
+            title: pt.title,
+            description: pt.description,
+            type: pt.type,
+            status: pt.status,
+            notes: pt.notes,
+            started_in_scene_id: null, // cascade resolves later
+            resolved_in_scene_id: null
+          });
+        }
+
+        // Notes
+        for (const n of (parsed.notes || [])) {
+          await supabase.from('notes').insert({
+            id: n.id.length > 20 ? undefined : n.id,
+            book_id: activeBookId,
+            title: n.title,
+            content: n.content
+          });
+        }
+
+        // Memory updates
+        for (const m of (parsed.memoryUpdates || [])) {
+          // get matching scene from DB
+          const { data: dbScs } = await supabase.from('scenes').select('id, title').eq('book_id', activeBookId);
+          const matchedSc = dbScs?.find((s: any) => s.title === parsed.scenes.find((sc: any) => sc.id === m.sceneId)?.title);
+          if (matchedSc) {
+            await supabase.from('memory_updates').insert({
+              book_id: activeBookId,
+              scene_id: matchedSc.id,
+              summary: m.summary,
+              events: m.events,
+              new_facts: m.newFacts,
+              revealed_info: m.revealedInfo,
+              unresolved_questions: m.unresolvedQuestions,
+              emotional_changes: m.emotionalChanges,
+              character_development: m.characterDevelopment,
+              timeline_updates: m.timelineUpdates,
+              location_updates: m.locationUpdates,
+              status: m.status
+            });
+          }
+        }
+
+        // Reload Book
+        await loadBook(activeBookId);
       } else {
         alert("Invalid project format!");
       }
     } catch (e) {
-      alert("Failed to parse project JSON.");
+      alert("Failed to parse/import project JSON.");
+      console.error(e);
     }
   };
 
-  const updateSettings = (newSettings: Partial<ProjectState['settings']>) => {
-    setProject(prev => ({
-      ...prev,
-      settings: { ...prev.settings, ...newSettings }
-    }));
+  const updateSettings = async (newSettings: Partial<ProjectState['settings']>) => {
+    if (!activeBookId) return;
+    try {
+      const mergedSettings = { ...project.settings, ...newSettings };
+      const { error } = await supabase
+        .from('books')
+        .update({
+          settings: mergedSettings
+        })
+        .eq('id', activeBookId);
+
+      if (error) throw error;
+
+      setProject(prev => ({
+        ...prev,
+        settings: mergedSettings
+      }));
+    } catch (err) {
+      console.error('Failed to update settings:', err);
+    }
   };
 
   return (
@@ -842,6 +1387,12 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       activeBibleCategory,
       activeBibleItemId,
       
+      user,
+      authLoading,
+      booksList,
+      activeBookId,
+      booksLoading,
+
       aiRunning,
       revisionSuggestions,
       continuityWarnings,
@@ -852,6 +1403,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       pendingMemoryUpdate,
       aiError,
       clearAIError,
+
+      signUp,
+      signIn,
+      signOut,
+      createBook,
+      loadBook,
+      closeBook,
+      fetchBooksList,
 
       updateSceneContent,
       selectScene,
