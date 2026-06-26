@@ -1,7 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2
+  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus
 } from 'lucide-react';
 import { BibleItemEditor } from './BibleItemEditor';
 import { PlotThreadsTracker } from './PlotThreadsTracker';
@@ -21,19 +21,37 @@ export const ReferenceLibrary: React.FC = () => {
     deleteBibleItem
   } = useStore();
 
+  const categories = [
+    { id: 'characters', label: 'Characters', icon: User, tab: 'bible' },
+    { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible' },
+    { id: 'factions', label: 'Factions', icon: Users, tab: 'bible' },
+    { id: 'powerSystems', label: 'Magic', icon: Sparkles, tab: 'bible' },
+    { id: 'plots', label: 'Plots', icon: GitCommit, tab: 'plots' },
+    { id: 'notes', label: 'Notes', icon: FileText, tab: 'notes' },
+    { id: 'search', label: 'Search', icon: Search, tab: 'search' }
+  ];
+
+  const activeCategoryLabel = activeBibleCategory === 'powerSystems'
+    ? 'Magic Systems'
+    : activeBibleCategory.charAt(0).toUpperCase() + activeBibleCategory.slice(1);
+
+  const createBibleItem = () => {
+    if (activeBibleCategory === 'characters') {
+      addBibleItem('characters', { name: 'New Character', appearance: '', personality: '', goals: '', fears: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
+    } else if (activeBibleCategory === 'locations') {
+      addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
+    } else if (activeBibleCategory === 'factions') {
+      addBibleItem('factions', { name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
+    } else {
+      addBibleItem('powerSystems', { name: 'New Magic System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
+    }
+  };
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+    <div className="reference-library">
       {/* Category pills grid */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 12 }}>
-        {[
-          { id: 'characters', label: 'Characters', icon: User, tab: 'bible' },
-          { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible' },
-          { id: 'factions', label: 'Factions', icon: Users, tab: 'bible' },
-          { id: 'powerSystems', label: 'Magic', icon: Sparkles, tab: 'bible' },
-          { id: 'plots', label: 'Plots', icon: GitCommit, tab: 'plots' },
-          { id: 'notes', label: 'Notes', icon: FileText, tab: 'notes' },
-          { id: 'search', label: 'Search', icon: Search, tab: 'search' }
-        ].map(cat => {
+      <div className="reference-category-grid">
+        {categories.map(cat => {
           const isActive = (cat.tab === 'bible' && activeLeftTab === 'bible' && activeBibleCategory === cat.id) ||
                            (cat.tab === 'plots' && activeLeftTab === 'plots') ||
                            (cat.tab === 'notes' && activeLeftTab === 'notes') ||
@@ -43,18 +61,7 @@ export const ReferenceLibrary: React.FC = () => {
           return (
             <button
               key={cat.id}
-              className="btn"
-              style={{
-                fontSize: '10px',
-                padding: '4px 8px',
-                borderRadius: 6,
-                backgroundColor: isActive ? 'var(--accent-purple-dim)' : 'var(--bg-tertiary)',
-                color: isActive ? 'var(--text-primary)' : 'var(--text-secondary)',
-                border: isActive ? '1px solid var(--accent-purple)' : '1px solid var(--border-color)',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4
-              }}
+              className={`reference-category-btn ${isActive ? 'active' : ''}`}
               onClick={() => {
                 if (cat.tab === 'bible') {
                   setLeftTab('bible');
@@ -64,7 +71,7 @@ export const ReferenceLibrary: React.FC = () => {
                 }
               }}
             >
-              <Icon size={11} style={{ color: isActive ? 'var(--accent-purple)' : 'inherit' }} />
+              <Icon size={12} />
               {cat.label}
             </button>
           );
@@ -72,46 +79,38 @@ export const ReferenceLibrary: React.FC = () => {
       </div>
 
       {/* List & Form Content Container */}
-      <div style={{ flex: 1 }}>
+      <div className="reference-library-body">
         
         {/* === BIBLE CATEGORY VIEW === */}
         {activeLeftTab === 'bible' && (
           <div>
             {activeBibleItemId === null ? (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-                    {activeBibleCategory === 'powerSystems' ? 'Magic Systems' : activeBibleCategory.charAt(0).toUpperCase() + activeBibleCategory.slice(1)} ({project.storyBible[activeBibleCategory].length})
-                  </span>
+              <div className="reference-list-panel">
+                <div className="sidebar-mini-toolbar reference-toolbar">
+                  <div>
+                    <div className="sidebar-mini-title">{activeCategoryLabel}</div>
+                    <div className="sidebar-mini-meta">
+                      {project.storyBible[activeBibleCategory].length} item{project.storyBible[activeBibleCategory].length === 1 ? '' : 's'}
+                    </div>
+                  </div>
                   <button 
-                    className="btn btn-primary" 
-                    style={{ padding: '2px 6px', fontSize: 10.5 }}
-                    onClick={() => {
-                      if (activeBibleCategory === 'characters') {
-                        addBibleItem('characters', { name: 'New Character', appearance: '', personality: '', goals: '', fears: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
-                      } else if (activeBibleCategory === 'locations') {
-                        addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
-                      } else if (activeBibleCategory === 'factions') {
-                        addBibleItem('factions', { name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
-                      } else {
-                        addBibleItem('powerSystems', { name: 'New Magic System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
-                      }
-                    }}
+                    className="btn btn-primary sidebar-action-button" 
+                    onClick={createBibleItem}
                   >
-                    + Add
+                    <Plus size={13} />
+                    Add
                   </button>
                 </div>
 
-                <div className="bible-list" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="bible-list">
                   {project.storyBible[activeBibleCategory].map((item: any) => (
                     <div 
                       key={item.id} 
-                      className="tree-item"
+                      className="tree-item reference-list-item"
                       onClick={() => setBibleItemId(item.id)}
-                      style={{ padding: '6px 8px', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}
                     >
                       <span style={{ fontSize: 12 }}>{item.name}</span>
-                      <div className="tree-actions">
+                      <div className="tree-actions tree-actions-visible">
                         <button 
                           className="btn-icon"
                           onClick={(e) => {
@@ -125,8 +124,13 @@ export const ReferenceLibrary: React.FC = () => {
                     </div>
                   ))}
                   {project.storyBible[activeBibleCategory].length === 0 && (
-                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textAlign: 'center', padding: '16px 0' }}>
-                      Empty category. Click "+ Add" to create.
+                    <div className="sidebar-empty-state">
+                      <User size={18} />
+                      <span>No {activeCategoryLabel.toLowerCase()} yet.</span>
+                      <button type="button" className="btn btn-primary sidebar-icon-label-btn" onClick={createBibleItem}>
+                        <Plus size={13} />
+                        Add Item
+                      </button>
                     </div>
                   )}
                 </div>

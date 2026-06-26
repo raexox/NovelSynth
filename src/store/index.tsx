@@ -82,7 +82,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [selectedText, setSelectedText] = useState<string>('');
 
   // 1. Auth Hook
-  const { signUp, signIn, signOut, updateUserSettings } = useAuth(
+  const { signUp, signIn, signOut, updateUserSettings: persistUserSettings } = useAuth(
     setUser,
     setAuthLoading,
     setActiveBookId,
@@ -192,6 +192,16 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const setRightTab = (tab: string) => setActiveRightTab(tab);
   const toggleLeftSidebar = () => setIsLeftSidebarOpen(!isLeftSidebarOpen);
   const toggleRightSidebar = () => setIsRightSidebarOpen(!isRightSidebarOpen);
+  const updateUserSettings = async (settings: any) => {
+    await persistUserSettings(settings);
+    setProject(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        ...settings
+      }
+    }));
+  };
   const setBibleCategory = (cat: 'characters' | 'locations' | 'factions' | 'powerSystems') => {
     setActiveBibleCategory(cat);
     setBibleItemId(null);

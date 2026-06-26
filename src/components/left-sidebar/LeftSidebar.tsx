@@ -76,60 +76,26 @@ export const LeftSidebar: React.FC = () => {
   return (
     <div className="sidebar-container">
       {/* Visual Top Tabs */}
-      <div className="sidebar-tabs-pill-container" style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-color)', backgroundColor: 'var(--bg-secondary)' }}>
-        <div style={{ display: 'flex', background: 'var(--bg-primary)', padding: 3, borderRadius: 8, border: '1px solid var(--border-color)' }}>
+      <div className="sidebar-tabs-pill-container">
+        <div className="sidebar-primary-tabs">
           <button 
             type="button"
-            className="sidebar-tab-pill-btn"
-            style={{
-              flex: 1,
-              padding: '6px 8px',
-              border: 'none',
-              background: isManuscriptTab ? 'var(--bg-tertiary)' : 'none',
-              color: isManuscriptTab ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderRadius: 6,
-              fontSize: '11.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-              boxShadow: isManuscriptTab ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
-            }}
+            className={`sidebar-tab-pill-btn ${isManuscriptTab ? 'active' : ''}`}
             onClick={() => setLeftTab('novel')}
           >
-            <Book size={13} style={{ color: isManuscriptTab ? 'var(--accent-purple)' : 'inherit' }} />
+            <Book size={13} />
             Manuscript
           </button>
           <button 
             type="button"
-            className="sidebar-tab-pill-btn"
-            style={{
-              flex: 1,
-              padding: '6px 8px',
-              border: 'none',
-              background: isReferenceTab ? 'var(--bg-tertiary)' : 'none',
-              color: isReferenceTab ? 'var(--text-primary)' : 'var(--text-secondary)',
-              borderRadius: 6,
-              fontSize: '11.5px',
-              fontWeight: 600,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 6,
-              transition: 'all 0.2s ease',
-              boxShadow: isReferenceTab ? '0 1px 3px rgba(0,0,0,0.2)' : 'none'
-            }}
+            className={`sidebar-tab-pill-btn ${isReferenceTab ? 'active' : ''}`}
             onClick={() => {
               if (activeLeftTab !== 'bible' && activeLeftTab !== 'plots' && activeLeftTab !== 'notes' && activeLeftTab !== 'search') {
                 setLeftTab('bible');
               }
             }}
           >
-            <Compass size={13} style={{ color: isReferenceTab ? 'var(--accent-purple)' : 'inherit' }} />
+            <Compass size={13} />
             Reference Library
           </button>
         </div>

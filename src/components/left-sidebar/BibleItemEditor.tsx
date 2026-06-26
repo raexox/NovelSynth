@@ -1,6 +1,7 @@
 import React from 'react';
 import { useStore } from '../../store';
 import type { Character, Location, Faction, PowerSystem } from '../../types';
+import { ArrowLeft } from 'lucide-react';
 
 export const BibleItemEditor: React.FC = () => {
   const {
@@ -18,23 +19,22 @@ export const BibleItemEditor: React.FC = () => {
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+    <div className="bible-editor">
       <button 
         type="button"
-        className="btn btn-secondary" 
-        style={{ alignSelf: 'flex-start', padding: '2px 8px', fontSize: 10.5, marginBottom: 4 }}
+        className="btn btn-secondary sidebar-icon-label-btn" 
         onClick={() => setBibleItemId(null)}
       >
-        &larr; Back to List
+        <ArrowLeft size={13} />
+        Back
       </button>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="bible-editor-fields">
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label" style={{ fontSize: 10 }}>Name</label>
+          <label className="form-label">Name</label>
           <input 
             type="text" 
             className="form-input" 
-            style={{ padding: '6px 10px', fontSize: 12 }}
             value={item.name} 
             onChange={e => updateBibleItem(activeBibleCategory, { ...item, name: e.target.value })}
           />
@@ -43,28 +43,25 @@ export const BibleItemEditor: React.FC = () => {
         {activeBibleCategory === 'characters' && (
           <>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Appearance</label>
+              <label className="form-label">Appearance</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 60 }}
                 value={(item as Character).appearance} 
                 onChange={e => updateBibleItem('characters', { ...item, appearance: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Personality</label>
+              <label className="form-label">Personality</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 60 }}
                 value={(item as Character).personality} 
                 onChange={e => updateBibleItem('characters', { ...item, personality: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Goals & Fears</label>
+              <label className="form-label">Goals & Fears</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 60 }}
                 value={`Goals: ${(item as Character).goals}\nFears: ${(item as Character).fears}`} 
                 onChange={e => {
                   const text = e.target.value;
@@ -76,10 +73,9 @@ export const BibleItemEditor: React.FC = () => {
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Speech Style & secrets</label>
+              <label className="form-label">Speech Style & Secrets</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 60 }}
                 value={`Voice: ${(item as Character).speechStyle}\nSecrets: ${(item as Character).secrets}`} 
                 onChange={e => {
                   const text = e.target.value;
@@ -96,19 +92,17 @@ export const BibleItemEditor: React.FC = () => {
         {activeBibleCategory === 'locations' && (
           <>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Description</label>
+              <label className="form-label">Description</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 70 }}
                 value={(item as Location).description} 
                 onChange={e => updateBibleItem('locations', { ...item, description: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Culture & Landmarks</label>
+              <label className="form-label">Culture & Landmarks</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 70 }}
                 value={`Culture: ${(item as Location).culture}\nLandmarks: ${(item as Location).landmarks}`} 
                 onChange={e => {
                   const text = e.target.value;
@@ -124,20 +118,18 @@ export const BibleItemEditor: React.FC = () => {
         {activeBibleCategory === 'factions' && (
           <>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Leader</label>
+              <label className="form-label">Leader</label>
               <input 
                 type="text"
                 className="form-input" 
-                style={{ padding: '6px 10px', fontSize: 12 }}
                 value={(item as Faction).leader} 
                 onChange={e => updateBibleItem('factions', { ...item, leader: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Beliefs & Faction Details</label>
+              <label className="form-label">Beliefs & Faction Details</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 90 }}
                 value={(item as Faction).beliefs} 
                 onChange={e => updateBibleItem('factions', { ...item, beliefs: e.target.value })}
               />
@@ -148,19 +140,17 @@ export const BibleItemEditor: React.FC = () => {
         {activeBibleCategory === 'powerSystems' && (
           <>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Rules & Systems</label>
+              <label className="form-label">Rules & Systems</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 80 }}
                 value={(item as PowerSystem).rules} 
                 onChange={e => updateBibleItem('powerSystems', { ...item, rules: e.target.value })}
               />
             </div>
             <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 10 }}>Limitations & Costs</label>
+              <label className="form-label">Limitations & Costs</label>
               <textarea 
                 className="form-textarea" 
-                style={{ fontSize: 11.5, minHeight: 80 }}
                 value={(item as PowerSystem).costs} 
                 onChange={e => updateBibleItem('powerSystems', { ...item, costs: e.target.value })}
               />

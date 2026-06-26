@@ -481,7 +481,8 @@ const WorkspaceShell: React.FC = () => {
     deleteBook,
     activeLeftTab,
     setLeftTab,
-    updateBookDetails
+    updateBookDetails,
+    updateUserSettings
   } = useStore();
 
   // Toolbar toggles
@@ -492,6 +493,10 @@ const WorkspaceShell: React.FC = () => {
   const [bookGenre, setBookGenre] = useState(project.settings.genre || '');
   const [bookTargetWords, setBookTargetWords] = useState(project.settings.targetWordCount || 50000);
   const [bookDesc, setBookDesc] = useState(project.settings.description || '');
+  const [apiKey, setApiKey] = useState(project.settings.apiKey || '');
+  const [model, setModel] = useState(project.settings.model || 'gemini-1.5-flash');
+  const [provider, setProvider] = useState<'gemini' | 'openai' | 'openrouter'>(project.settings.provider || 'gemini');
+  const [aiTemp, setAiTemp] = useState(project.settings.aiTemperature || 0.7);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deletingBook, setDeletingBook] = useState(false);
 
@@ -503,8 +508,21 @@ const WorkspaceShell: React.FC = () => {
     setBookGenre(project.settings.genre || '');
     setBookTargetWords(project.settings.targetWordCount || 50000);
     setBookDesc(project.settings.description || '');
+    setApiKey(project.settings.apiKey || '');
+    setModel(project.settings.model || 'gemini-1.5-flash');
+    setProvider(project.settings.provider || 'gemini');
+    setAiTemp(project.settings.aiTemperature || 0.7);
     setDeleteConfirmText('');
-  }, [project.projectName, project.settings.genre, project.settings.targetWordCount, project.settings.description]);
+  }, [
+    project.projectName,
+    project.settings.genre,
+    project.settings.targetWordCount,
+    project.settings.description,
+    project.settings.apiKey,
+    project.settings.model,
+    project.settings.provider,
+    project.settings.aiTemperature
+  ]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -523,12 +541,21 @@ const WorkspaceShell: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleSettingsSave = (e: React.FormEvent) => {
+  const handleSettingsSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const aiSettings = {
+      apiKey: apiKey.trim(),
+      model: model.trim(),
+      provider,
+      aiTemperature: aiTemp
+    };
+
+    await updateUserSettings(aiSettings);
     updateBookDetails(bookTitle.trim(), {
       genre: bookGenre.trim(),
       targetWordCount: Number(bookTargetWords),
-      description: bookDesc.trim()
+      description: bookDesc.trim(),
+      ...aiSettings
     });
     setShowSettings(false);
   };
@@ -760,6 +787,74 @@ const WorkspaceShell: React.FC = () => {
                     value={bookDesc}
                     onChange={e => setBookDesc(e.target.value)}
                   />
+                </div>
+              </section>
+
+              <section className="settings-section">
+                <div className="settings-section-heading">
+                  <h3>AI Defaults</h3>
+                </div>
+
+                <div className="settings-form-grid">
+                  <div className="form-group">
+                    <label className="form-label">API Provider</label>
+                    <select
+                      className="form-select"
+                      value={provider}
+                      onChange={e => {
+                        const val = e.target.value as 'gemini' | 'openai' | 'openrouter';
+                        setProvider(val);
+                        if (val === 'gemini') setModel('gemini-1.5-flash');
+                        else if (val === 'openai') setModel('gpt-4o-mini');
+                        else setModel('google/gemini-2.5-flash');
+                      }}
+                    >
+                      <option value="gemini">Gemini API</option>
+                      <option value="openai">OpenAI API</option>
+                      <option value="openrouter">OpenRouter API</option>
+                    </select>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">AI Temperature</label>
+                    <div className="range-control">
+                      <input
+                        type="range"
+                        min="0.1"
+                        max="1.0"
+                        step="0.05"
+                        value={aiTemp}
+                        onChange={e => setAiTemp(parseFloat(e.target.value))}
+                      />
+                      <span>{aiTemp}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Model Identifier</label>
+                  <input
+                    type="text"
+                    className="form-input"
+                    placeholder="e.g. gpt-4o-mini, gemini-1.5-flash..."
+                    value={model}
+                    onChange={e => setModel(e.target.value)}
+                  />
+                  <span className="form-help">
+                    OpenAI: <code>gpt-4o</code>, <code>gpt-4o-mini</code>. Gemini: <code>gemini-1.5-flash</code>, <code>gemini-1.5-pro</code>. OpenRouter: <code>google/gemini-2.5-flash</code>.
+                  </span>
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">API Token / Key</label>
+                  <input
+                    type="password"
+                    className="form-input"
+                    placeholder="Enter LLM provider API token..."
+                    value={apiKey}
+                    onChange={e => setApiKey(e.target.value)}
+                  />
+                  <span className="form-help">Required for AI scans and generation.</span>
                 </div>
               </section>
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
-import { ChevronDown, ChevronRight, Plus, BookOpen, Trash2, Edit3 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Plus, BookOpen, Trash2, Edit3, X } from 'lucide-react';
 
 export const ManuscriptOutline: React.FC = () => {
   const {
@@ -63,27 +63,69 @@ export const ManuscriptOutline: React.FC = () => {
     setEditingSceneId(null);
   };
 
+  const sortedChapters = [...project.chapters].sort((a, b) => a.order - b.order);
+
   return (
-    <div style={{ padding: 10 }}>
+    <div className="manuscript-outline">
+      <div className="sidebar-mini-toolbar">
+        <div>
+          <div className="sidebar-mini-title">Chapters</div>
+          <div className="sidebar-mini-meta">
+            {project.chapters.length} chapter{project.chapters.length === 1 ? '' : 's'} / {project.scenes.length} scene{project.scenes.length === 1 ? '' : 's'}
+          </div>
+        </div>
+        <button
+          type="button"
+          className="btn btn-primary sidebar-action-button"
+          onClick={() => setShowAddChapter(true)}
+          title="New Chapter"
+        >
+          <Plus size={13} />
+          <span>Chapter</span>
+        </button>
+      </div>
+
       {showAddChapter && (
-        <form onSubmit={handleAddChapterSubmit} style={{ marginBottom: 12, display: 'flex', gap: 6 }}>
+        <form onSubmit={handleAddChapterSubmit} className="sidebar-inline-form">
           <input 
             type="text" 
             className="form-input" 
-            placeholder="Chapter Title..." 
+            placeholder="Chapter title" 
             value={newChapterTitle} 
             onChange={e => setNewChapterTitle(e.target.value)} 
             autoFocus
-            style={{ fontSize: 12, padding: '4px 8px' }}
           />
-          <button type="submit" className="btn btn-primary" style={{ padding: '4px 8px', fontSize: 11 }}>Add</button>
+          <button type="submit" className="btn btn-primary sidebar-icon-label-btn">
+            <Plus size={13} />
+            Add
+          </button>
+          <button
+            type="button"
+            className="btn-icon"
+            onClick={() => {
+              setShowAddChapter(false);
+              setNewChapterTitle('');
+            }}
+            title="Cancel"
+          >
+            <X size={14} />
+          </button>
         </form>
       )}
 
       <div className="manuscript-tree">
-        {project.chapters
-          .sort((a, b) => a.order - b.order)
-          .map(ch => {
+        {sortedChapters.length === 0 && (
+          <div className="sidebar-empty-state">
+            <BookOpen size={18} />
+            <span>No chapters yet.</span>
+            <button type="button" className="btn btn-primary sidebar-icon-label-btn" onClick={() => setShowAddChapter(true)}>
+              <Plus size={13} />
+              New Chapter
+            </button>
+          </div>
+        )}
+
+        {sortedChapters.map(ch => {
             const chScenes = project.scenes
               .filter(s => s.chapterId === ch.id)
               .sort((a, b) => a.order - b.order);
@@ -94,18 +136,7 @@ export const ManuscriptOutline: React.FC = () => {
               <div key={ch.id} style={{ marginBottom: 6 }}>
                 <div 
                   className={`tree-item ${isActiveChapter ? 'selected' : ''}`}
-                  style={{ 
-                    fontWeight: 600, 
-                    color: isActiveChapter ? 'var(--accent-purple)' : 'var(--text-primary)', 
-                    fontSize: 12.5,
-                    backgroundColor: isActiveChapter ? 'hsla(265, 80%, 65%, 0.08)' : 'transparent',
-                    borderLeft: isActiveChapter ? '2px solid var(--accent-purple)' : '2px solid transparent',
-                    borderRadius: 4,
-                    padding: '6px 8px 6px ' + (isActiveChapter ? '6px' : '8px'),
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between'
-                  }}
+                  style={{ color: isActiveChapter ? 'var(--accent-purple)' : 'var(--text-primary)' }}
                   onClick={() => toggleChapterExpand(ch.id)}
                 >
                   {editingChapterId === ch.id ? (
@@ -117,14 +148,13 @@ export const ManuscriptOutline: React.FC = () => {
                       onClick={(e) => e.stopPropagation()}
                       style={{ display: 'flex', gap: 4, flex: 1, marginRight: 6 }}
                     >
-                      <input 
+                      <input
                         type="text"
                         className="form-input"
                         value={editingChapterTitle}
                         onChange={e => setEditingChapterTitle(e.target.value)}
                         autoFocus
                         onBlur={() => handleEditChapterSubmit(ch.id)}
-                        style={{ fontSize: 11.5, padding: '2px 6px', height: 22 }}
                       />
                     </form>
                   ) : (
@@ -143,12 +173,13 @@ export const ManuscriptOutline: React.FC = () => {
                       <span>{ch.title}</span>
                     </span>
                   )}
-                  <div className="tree-actions" onClick={e => e.stopPropagation()}>
+                  <div className="tree-actions tree-actions-visible" onClick={e => e.stopPropagation()}>
                     <button 
                       className="btn-icon" 
                       onClick={(e) => {
                         e.stopPropagation();
                         addScene(ch.id, `New Scene ${chScenes.length + 1}`);
+                        setExpandedChapters(prev => ({ ...prev, [ch.id]: true }));
                       }}
                       title="Add Scene"
                     >
@@ -178,13 +209,12 @@ export const ManuscriptOutline: React.FC = () => {
                 </div>
 
                 {isExpanded && (
-                  <div style={{ paddingLeft: 12, borderLeft: '1px solid var(--border-color)', marginLeft: 6, marginTop: 2 }}>
+                  <div className="scene-tree-branch">
                     {chScenes.map(sc => (
                       <div 
                         key={sc.id} 
                         className={`tree-item ${activeSceneId === sc.id ? 'selected' : ''}`}
                         onClick={() => selectScene(sc.id)}
-                        style={{ fontSize: 12, padding: '4px 6px' }}
                       >
                         {editingSceneId === sc.id ? (
                           <form 
@@ -202,7 +232,6 @@ export const ManuscriptOutline: React.FC = () => {
                               onChange={e => setEditingSceneTitle(e.target.value)}
                               autoFocus
                               onBlur={() => handleEditSceneSubmit(sc.id)}
-                              style={{ fontSize: 11, padding: '2px 6px', height: 20 }}
                             />
                           </form>
                         ) : (
@@ -218,7 +247,7 @@ export const ManuscriptOutline: React.FC = () => {
                             <span>{sc.title}</span>
                           </span>
                         )}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }} onClick={e => e.stopPropagation()}>
+                        <div className="scene-row-actions" onClick={e => e.stopPropagation()}>
                           <span className={`badge badge-${sc.status}`} style={{
                             fontSize: 8.5,
                             padding: '1px 4px',
@@ -230,7 +259,7 @@ export const ManuscriptOutline: React.FC = () => {
                           }}>
                             {sc.status}
                           </span>
-                          <div className="tree-actions">
+                          <div className="tree-actions tree-actions-visible">
                             <button 
                               className="btn-icon" 
                               onClick={(e) => {
@@ -256,8 +285,19 @@ export const ManuscriptOutline: React.FC = () => {
                       </div>
                     ))}
                     {chScenes.length === 0 && (
-                      <div style={{ fontSize: 10.5, color: 'var(--text-muted)', padding: '4px 8px' }}>
-                        No scenes. Click + to add.
+                      <div className="sidebar-empty-row">
+                        <span>No scenes yet.</span>
+                        <button
+                          type="button"
+                          className="btn btn-secondary sidebar-icon-label-btn"
+                          onClick={() => {
+                            addScene(ch.id, 'New Scene 1');
+                            setExpandedChapters(prev => ({ ...prev, [ch.id]: true }));
+                          }}
+                        >
+                          <Plus size={12} />
+                          Scene
+                        </button>
                       </div>
                     )}
                   </div>
