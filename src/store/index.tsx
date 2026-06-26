@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
 import type { ProjectState, MemoryUpdate } from '../types';
 import type { StoreContextType } from './storeTypes';
@@ -47,6 +47,12 @@ const EMPTY_PROJECT_STATE: ProjectState = {
 
 const StoreContext = createContext<StoreContextType | undefined>(undefined);
 
+type SceneDiagnosticsCache = Record<string, {
+  continuityWarnings: StoreContextType['continuityWarnings'];
+  dialogueWarnings: StoreContextType['dialogueWarnings'];
+  pacingSuggestions: string[] | null;
+}>;
+
 export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [project, setProject] = useState<ProjectState>(EMPTY_PROJECT_STATE);
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
@@ -70,12 +76,65 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [continuityWarnings, setContinuityWarnings] = useState<StoreContextType['continuityWarnings']>(null);
   const [dialogueWarnings, setDialogueWarnings] = useState<StoreContextType['dialogueWarnings']>(null);
   const [pacingSuggestions, setPacingSuggestions] = useState<string[] | null>(null);
+  const [sceneDiagnosticsCache, setSceneDiagnosticsCache] = useState<SceneDiagnosticsCache>({});
   const [researchResults, setResearchResults] = useState<string | null>(null);
   const [activeContexts, setActiveContexts] = useState<string[]>([]);
   const [pendingMemoryUpdate, setPendingMemoryUpdate] = useState<MemoryUpdate | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
 
   const clearAIError = () => setAiError(null);
+  const clearSceneTransientAI = () => {
+    setRevisionSuggestions(null);
+    setResearchResults(null);
+    setPendingMemoryUpdate(null);
+    setAiError(null);
+  };
+  const cacheSceneDiagnostics = (
+    sceneId: string,
+    updates: Partial<SceneDiagnosticsCache[string]>
+  ) => {
+    setSceneDiagnosticsCache(prev => ({
+      ...prev,
+      [sceneId]: {
+        continuityWarnings: prev[sceneId]?.continuityWarnings ?? null,
+        dialogueWarnings: prev[sceneId]?.dialogueWarnings ?? null,
+        pacingSuggestions: prev[sceneId]?.pacingSuggestions ?? null,
+        ...updates
+      }
+    }));
+  };
+  const setContinuityWarningsForActiveScene: React.Dispatch<React.SetStateAction<StoreContextType['continuityWarnings']>> = value => {
+    setContinuityWarnings(value);
+    if (activeSceneId && typeof value !== 'function') {
+      cacheSceneDiagnostics(activeSceneId, { continuityWarnings: value });
+    }
+  };
+  const setDialogueWarningsForActiveScene: React.Dispatch<React.SetStateAction<StoreContextType['dialogueWarnings']>> = value => {
+    setDialogueWarnings(value);
+    if (activeSceneId && typeof value !== 'function') {
+      cacheSceneDiagnostics(activeSceneId, { dialogueWarnings: value });
+    }
+  };
+  const setPacingSuggestionsForActiveScene: React.Dispatch<React.SetStateAction<string[] | null>> = value => {
+    setPacingSuggestions(value);
+    if (activeSceneId && typeof value !== 'function') {
+      cacheSceneDiagnostics(activeSceneId, { pacingSuggestions: value });
+    }
+  };
+
+  useEffect(() => {
+    if (!activeSceneId) {
+      setContinuityWarnings(null);
+      setDialogueWarnings(null);
+      setPacingSuggestions(null);
+      return;
+    }
+
+    const cachedDiagnostics = sceneDiagnosticsCache[activeSceneId];
+    setContinuityWarnings(cachedDiagnostics?.continuityWarnings ?? null);
+    setDialogueWarnings(cachedDiagnostics?.dialogueWarnings ?? null);
+    setPacingSuggestions(cachedDiagnostics?.pacingSuggestions ?? null);
+  }, [activeSceneId, sceneDiagnosticsCache]);
 
   // Chat States
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'model'; content: string }>>([]);
@@ -123,9 +182,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setAiRunning,
     setAiError,
     setRevisionSuggestions,
-    setContinuityWarnings,
-    setDialogueWarnings,
-    setPacingSuggestions,
+    setContinuityWarningsForActiveScene,
+    setDialogueWarningsForActiveScene,
+    setPacingSuggestionsForActiveScene,
     setResearchResults,
     pendingMemoryUpdate,
     setPendingMemoryUpdate,
@@ -155,7 +214,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveSceneId,
     project,
     setProject,
-    clearAISuggestions
+    clearSceneTransientAI
   );
 
   // 5. Story Bible Hook
