@@ -6,6 +6,7 @@ import type {
 } from '../../types';
 import { DEFAULT_THEME, isThemeId } from '../../theme/themes';
 import { notify } from '../../services/notifications';
+import { clearSceneDraft, readSceneDraft } from '../sceneDraftCache';
 
 export const useBooks = (
   user: User | null,
@@ -133,17 +134,34 @@ export const useBooks = (
         order: r.order_index
       }));
 
-      const scenes: Scene[] = (scenesData || []).map((r: any) => ({
-        id: r.id,
-        chapterId: r.chapter_id,
-        title: r.title,
-        content: r.content,
-        order: r.order_index,
-        status: r.status as any,
-        wordCount: r.word_count,
-        lastSaved: r.updated_at || r.created_at || new Date().toISOString(),
-        metadata: r.metadata as any
-      }));
+      const draftsToSync: Array<{ id: string; content: string; wordCount: number }> = [];
+      const scenes: Scene[] = (scenesData || []).map((r: any) => {
+        const remoteSavedAt = r.updated_at || r.created_at || new Date().toISOString();
+        const cachedDraft = readSceneDraft(r.id);
+        const shouldUseCachedDraft = cachedDraft && new Date(cachedDraft.savedAt).getTime() > new Date(remoteSavedAt).getTime();
+        const content = shouldUseCachedDraft ? cachedDraft.content : r.content;
+        const wordCount = content.split(/\s+/).filter(Boolean).length;
+
+        if (shouldUseCachedDraft) {
+          draftsToSync.push({
+            id: r.id,
+            content,
+            wordCount
+          });
+        }
+
+        return {
+          id: r.id,
+          chapterId: r.chapter_id,
+          title: r.title,
+          content,
+          order: r.order_index,
+          status: r.status as any,
+          wordCount,
+          lastSaved: shouldUseCachedDraft ? cachedDraft.savedAt : remoteSavedAt,
+          metadata: r.metadata as any
+        };
+      });
 
       const storyBible = {
         characters: [] as any[],
@@ -238,6 +256,23 @@ export const useBooks = (
       } else {
         setActiveSceneId(null);
       }
+
+      draftsToSync.forEach(async draft => {
+        const { error } = await supabase
+          .from('scenes')
+          .update({
+            content: draft.content,
+            word_count: draft.wordCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', draft.id);
+
+        if (!error) {
+          clearSceneDraft(draft.id);
+        } else {
+          console.error('Failed to sync cached scene draft:', error);
+        }
+      });
     } catch (err) {
       console.error('Failed to load book:', err);
       notify({
@@ -248,7 +283,7 @@ export const useBooks = (
     } finally {
       setBooksLoading(false);
     }
-  }, [setProject, setActiveBookId, setActiveSceneId, setBooksLoading]);
+  }, [user, setProject, setActiveBookId, setActiveSceneId, setBooksLoading]);
 
   const createBook = async (name: string) => {
     if (!user) return;

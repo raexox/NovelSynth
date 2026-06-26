@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState, Chapter, Scene, SceneMetadata } from '../../types';
+import { cacheSceneDraft, clearSceneDraft } from '../sceneDraftCache';
 
 /**
  * Custom hook managing NovelSynth chapters and scenes.
@@ -29,6 +30,8 @@ export const useManuscript = (
   };
 
   const updateSceneContent = (id: string, content: string) => {
+    cacheSceneDraft(id, content);
+
     // 1. Update React state instantly
     setProject(prev => {
       const updatedScenes = prev.scenes.map(s => {
@@ -52,7 +55,7 @@ export const useManuscript = (
 
     sceneTimeoutRef.current[id] = setTimeout(async () => {
       const wordCount = content.split(/\s+/).filter(Boolean).length;
-      await supabase
+      const { error } = await supabase
         .from('scenes')
         .update({
           content,
@@ -60,6 +63,13 @@ export const useManuscript = (
           updated_at: new Date().toISOString()
         })
         .eq('id', id);
+
+      if (!error) {
+        clearSceneDraft(id);
+        delete sceneTimeoutRef.current[id];
+      } else {
+        console.error('Failed to save scene content:', error);
+      }
     }, 1000);
   };
 
@@ -78,6 +88,7 @@ export const useManuscript = (
       if (updates.order !== undefined) dbUpdates.order_index = updates.order;
 
       if (updates.content !== undefined) {
+        cacheSceneDraft(id, updates.content);
         const wordCount = updates.content.split(/\s+/).filter(Boolean).length;
         mergedScene.wordCount = wordCount;
         dbUpdates.word_count = wordCount;
@@ -91,6 +102,10 @@ export const useManuscript = (
         .eq('id', id);
 
       if (error) throw error;
+
+      if (updates.content !== undefined) {
+        clearSceneDraft(id);
+      }
 
       setProject(prev => {
         const updatedScenes = prev.scenes.map(s => s.id === id ? mergedScene : s);

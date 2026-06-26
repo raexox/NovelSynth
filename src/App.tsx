@@ -913,7 +913,7 @@ const WorkspaceWrapper: React.FC = () => {
     if (bookId && activeBookId !== bookId) {
       loadBook(bookId);
     }
-  }, [bookId, activeBookId]);
+  }, [bookId, activeBookId, loadBook]);
 
   if (booksLoading) {
     return (
