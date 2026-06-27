@@ -379,6 +379,70 @@ export const useManuscript = (
     updateSceneOutline(sceneId, { beats: updatedBeats });
   };
 
+  const applyAiChatAction = async (action: any): Promise<boolean> => {
+    if (!action || typeof action !== 'object') return false;
+
+    // Resolve target scene
+    const targetQuery = String(action.targetScene || action.sceneId || action.sceneTitle || activeSceneId || '').toLowerCase().trim();
+    const sortedScenes = [...project.scenes].sort((a, b) => a.order - b.order);
+    
+    let targetScene = project.scenes.find(s => s.id === action.sceneId);
+    if (!targetScene && targetQuery) {
+      targetScene = project.scenes.find(s => s.title.toLowerCase() === targetQuery || s.title.toLowerCase().includes(targetQuery));
+    }
+    if (!targetScene && targetQuery) {
+      const matchNum = targetQuery.match(/\d+/);
+      if (matchNum) {
+        const idx = parseInt(matchNum[0], 10) - 1;
+        if (idx >= 0 && idx < sortedScenes.length) {
+          targetScene = sortedScenes[idx];
+        }
+      }
+    }
+    if (!targetScene) {
+      targetScene = sortedScenes.find(s => s.id === activeSceneId) || sortedScenes[0];
+    }
+
+    if (!targetScene) {
+      notify({ tone: 'warning', title: 'Target scene not found', message: 'Could not resolve scene for proposed update.' });
+      return false;
+    }
+
+    const currentOutline = targetScene.outline || { summary: '', beats: [] };
+    let newBeats = [...currentOutline.beats];
+
+    if (Array.isArray(action.addBeats) && action.addBeats.length > 0) {
+      const addedObjects = action.addBeats.map((bText: string) => ({
+        id: 'beat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+        text: String(bText).trim(),
+        completed: false
+      }));
+      newBeats = [...newBeats, ...addedObjects];
+    }
+
+    const newSummary = action.summary !== undefined ? String(action.summary).trim() : currentOutline.summary;
+
+    updateSceneOutline(targetScene.id, {
+      summary: newSummary,
+      beats: newBeats
+    });
+
+    if (action.location || action.pov) {
+      updateSceneMetadata(targetScene.id, {
+        ...(action.location ? { location: String(action.location) } : {}),
+        ...(action.pov ? { pov: String(action.pov) } : {})
+      });
+    }
+
+    notify({
+      tone: 'success',
+      title: 'Outline updated!',
+      message: `Applied proposed changes to "${targetScene.title}".`
+    });
+
+    return true;
+  };
+
   return {
     selectScene,
     updateSceneContent,
@@ -392,6 +456,7 @@ export const useManuscript = (
     updateSceneOutline,
     addPlotBeat,
     togglePlotBeat,
-    deletePlotBeat
+    deletePlotBeat,
+    applyAiChatAction
   };
 };

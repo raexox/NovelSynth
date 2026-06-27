@@ -86,6 +86,7 @@ export interface StoreContextType {
   togglePlotBeat: (sceneId: string, beatId: string) => void;
   deletePlotBeat: (sceneId: string, beatId: string) => void;
   expandSceneBeatsWithAI: (sceneId: string) => Promise<void>;
+  applyAiChatAction: (action: any) => Promise<boolean>;
   setLeftTab: (tab: string) => void;
   setRightTab: (tab: string) => void;
   toggleLeftSidebar: () => void;

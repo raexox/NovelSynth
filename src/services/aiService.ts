@@ -547,7 +547,57 @@ Instructions:
 1. Brainstorm creative ideas, give advice, or perform rewrites as requested.
 2. If asked what happens in a scene or to summarize a scene, provide an accurate summary based strictly on the provided manuscript content and recorded memories.
 3. If asked to rewrite, format the rewritten version clearly in clean Markdown so the user can easily review and copy it.
-4. Keep your advice professional, encouraging, and specific to the project context.`;
+4. PROPOSED ACTIONS (CRITICAL RULE: Match the action type to author request):
+If the author asks you to create/add a character, YOU MUST USE 'type': 'create_character'. DO NOT output 'update_scene_outline' when creating characters or locations!
+Explain your suggestions naturally, and append a proposed action JSON block at the VERY END of your message in one of these exact formats:
+
+For Creating Story Bible Characters (USE THIS WHEN AUTHOR ASKS TO ADD/CREATE A CHARACTER):
+\`\`\`json:action
+{
+  "type": "create_character",
+  "name": "Exact Character Name",
+  "role": "Protagonist / Antagonist / Supporting",
+  "personality": "Brief traits...",
+  "appearance": "Physical description...",
+  "goals": "Main motivation...",
+  "history": "Detailed backstory and history...",
+  "secrets": "Hidden secrets or twists...",
+  "abilities": "Skills or powers..."
+}
+\`\`\`
+
+For Scene Outlines (ONLY USE WHEN AUTHOR ASKS TO PLOT A SCENE):
+\`\`\`json:action
+{
+  "type": "update_scene_outline",
+  "targetScene": "Scene 1",
+  "summary": "Proposed rough concept summary",
+  "addBeats": ["Proposed beat 1", "Proposed beat 2"]
+}
+\`\`\`
+
+For Creating Story Bible Locations:
+\`\`\`json:action
+{
+  "type": "create_location",
+  "name": "Location Name",
+  "description": "Visual details...",
+  "culture": "Atmosphere / society...",
+  "landmarks": "Key sights..."
+}
+\`\`\`
+
+For Creating Plot Threads / Mysteries:
+\`\`\`json:action
+{
+  "type": "create_plot_thread",
+  "title": "Plot Thread Title",
+  "description": "What is at stake or to be resolved...",
+  "threadType": "goal | mystery | conflict | question | foreshadow"
+}
+\`\`\`
+
+5. Keep your advice professional, encouraging, and specific to the project context.`;
 
   let prompt = "Conversation history:\n\n";
   chatHistory.slice(0, -1).forEach(msg => {

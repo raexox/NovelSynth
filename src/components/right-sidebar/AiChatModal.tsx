@@ -3,6 +3,8 @@ import { useStore } from '../../store';
 import { Sparkles, Loader2, Send, X, Plus, Trash2, Mic, MicOff, Search, MessageSquare, Edit3 } from 'lucide-react';
 import { notify } from '../../services/notifications';
 import { useAssemblyAISpeech } from '../../hooks/useAssemblyAISpeech';
+import { AiActionCard } from './AiActionCard';
+import { parseAndNormalizeAiAction } from '../../utils/aiActionNormalizer';
 
 interface AiChatModalProps {
   isOpen: boolean;
@@ -294,6 +296,22 @@ export const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => 
             ) : (
               chatMessages.map((msg, idx) => {
                 const isUser = msg.role === 'user';
+
+                // Find preceding user prompt for context matching
+                let userPrompt = '';
+                if (!isUser && idx > 0) {
+                  userPrompt = chatMessages[idx - 1]?.content || '';
+                }
+
+                // Extract & normalize action payload
+                let actionData: any = null;
+                let displayContent = msg.content;
+                if (!isUser) {
+                  const parsed = parseAndNormalizeAiAction(msg.content, userPrompt);
+                  actionData = parsed.action;
+                  displayContent = parsed.cleanContent;
+                }
+
                 return (
                   <div 
                     key={idx}
@@ -316,8 +334,13 @@ export const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => 
                         lineHeight: 1.6,
                         boxShadow: '0 4px 12px rgba(0,0,0,0.15)'
                       }}
-                      dangerouslySetInnerHTML={{ __html: parseChatMarkdown(msg.content) }}
+                      dangerouslySetInnerHTML={{ __html: parseChatMarkdown(displayContent) }}
                     />
+
+                    {/* Proposed Action Card */}
+                    {!isUser && actionData && (
+                      <AiActionCard action={actionData} />
+                    )}
 
                     {!isUser && selectedText && (
                       <button

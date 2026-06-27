@@ -3,8 +3,10 @@ import { useStore } from '../../store';
 import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus, Mic, MicOff, Maximize2 } from 'lucide-react';
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { AiChatModal } from './AiChatModal';
+import { AiActionCard } from './AiActionCard';
 import { notify } from '../../services/notifications';
 import { useAssemblyAISpeech } from '../../hooks/useAssemblyAISpeech';
+import { parseAndNormalizeAiAction } from '../../utils/aiActionNormalizer';
 
 export const AiCoWriter: React.FC = () => {
   const {
@@ -190,6 +192,22 @@ export const AiCoWriter: React.FC = () => {
         ) : (
           chatMessages.map((msg, index) => {
             const isUser = msg.role === 'user';
+            
+            // Find preceding user prompt for context matching
+            let userPrompt = '';
+            if (!isUser && index > 0) {
+              userPrompt = chatMessages[index - 1]?.content || '';
+            }
+
+            // Extract & normalize action payload
+            let actionData: any = null;
+            let displayContent = msg.content;
+            if (!isUser) {
+              const parsed = parseAndNormalizeAiAction(msg.content, userPrompt);
+              actionData = parsed.action;
+              displayContent = parsed.cleanContent;
+            }
+
             return (
               <div 
                 key={index} 
@@ -211,8 +229,13 @@ export const AiCoWriter: React.FC = () => {
                     fontSize: 12,
                     lineHeight: 1.4
                   }}
-                  dangerouslySetInnerHTML={{ __html: parseChatMarkdown(msg.content) }}
+                  dangerouslySetInnerHTML={{ __html: parseChatMarkdown(displayContent) }}
                 />
+
+                {/* Proposed Action Card */}
+                {!isUser && actionData && (
+                  <AiActionCard action={actionData} />
+                )}
                 
                 {/* Replace selection helper */}
                 {!isUser && selectedText && (
@@ -222,14 +245,14 @@ export const AiCoWriter: React.FC = () => {
                       alignSelf: 'flex-start', 
                       padding: '1px 6px', 
                       fontSize: 9.5, 
-                      marginTop: 2, 
+                      marginTop: 4, 
                       borderColor: 'var(--accent-purple-dim)', 
                       color: 'var(--accent-purple)', 
                       fontWeight: 600,
                       borderRadius: 4
                     }}
                     onClick={() => {
-                      let cleanProse = msg.content;
+                      let cleanProse = displayContent;
                       if (cleanProse.includes('```')) {
                         const match = cleanProse.match(/```(?:markdown|text|prose)?\n([\s\S]*?)\n```/);
                         if (match && match[1]) {

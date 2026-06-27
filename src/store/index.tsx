@@ -20,6 +20,7 @@ import { useAI } from './hooks/useAI';
 import type { ChatConversation } from '../types/chatTypes';
 import { chatDatabaseService } from '../services/chatDatabaseService';
 import { DEFAULT_THEME } from '../theme/themes';
+import { notify } from '../services/notifications';
 
 const EMPTY_PROJECT_STATE: ProjectState = {
   projectName: '',
@@ -332,9 +333,152 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const closeReferenceModal = () => setIsReferenceModalOpen(false);
   const loadBibleItemVersions = (itemId: string) => {
-    return project.bibleItemVersions
+    return (project.bibleItemVersions || [])
       .filter(version => version.bibleItemId === itemId)
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  };
+
+  const applyAiChatAction = async (action: any): Promise<boolean> => {
+    if (!action || typeof action !== 'object') return false;
+    const type = String(action.type || '').toLowerCase();
+
+    try {
+      if (type === 'create_character' || type === 'add_character') {
+        const charName = action.name || 'New Character';
+        await addBibleItem('characters', {
+          name: charName,
+          role: action.role || 'Supporting Character',
+          personality: action.personality || '',
+          appearance: action.appearance || '',
+          goals: action.goals || '',
+          fears: action.fears || '',
+          relationships: action.relationships || '',
+          abilities: action.abilities || '',
+          speechStyle: action.speechStyle || '',
+          history: action.history || action.backstory || '',
+          injuries: action.injuries || '',
+          secrets: action.secrets || '',
+          developmentArc: action.developmentArc || ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Character Created!',
+          message: `Added "${charName}" to your Reference Library.`
+        });
+        return true;
+      }
+
+      if (type === 'create_location' || type === 'add_location') {
+        const locName = action.name || 'New Location';
+        await addBibleItem('locations', {
+          name: locName,
+          description: action.description || '',
+          culture: action.culture || '',
+          weather: action.weather || '',
+          history: action.history || '',
+          landmarks: action.landmarks || '',
+          connectedLocations: ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Location Created!',
+          message: `Added "${locName}" to your Reference Library.`
+        });
+        return true;
+      }
+
+      if (type === 'create_plot_thread' || type === 'add_plot_thread') {
+        const threadTitle = action.title || 'New Plot Thread';
+        await addPlotThread({
+          title: threadTitle,
+          description: action.description || '',
+          type: action.threadType || action.type === 'mystery' ? 'mystery' : 'goal',
+          status: 'active',
+          notes: action.notes || ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Plot Thread Created!',
+          message: `Added "${threadTitle}" to active plot threads.`
+        });
+        return true;
+      }
+
+      if (type === 'add_note' || type === 'create_note') {
+        const noteTitle = action.title || 'AI Note';
+        await addNote(noteTitle, action.content || action.description || '');
+        notify({
+          tone: 'success',
+          title: 'Note Created!',
+          message: `Saved "${noteTitle}" to your scrapbook.`
+        });
+        return true;
+      }
+
+      // Default: Update Scene Outline
+      const targetQuery = String(action.targetScene || action.sceneId || action.sceneTitle || activeSceneId || '').toLowerCase().trim();
+      const sortedScenes = [...project.scenes].sort((a, b) => a.order - b.order);
+      
+      let targetScene = project.scenes.find(s => s.id === action.sceneId);
+      if (!targetScene && targetQuery) {
+        targetScene = project.scenes.find(s => s.title.toLowerCase() === targetQuery || s.title.toLowerCase().includes(targetQuery));
+      }
+      if (!targetScene && targetQuery) {
+        const matchNum = targetQuery.match(/\d+/);
+        if (matchNum) {
+          const idx = parseInt(matchNum[0], 10) - 1;
+          if (idx >= 0 && idx < sortedScenes.length) {
+            targetScene = sortedScenes[idx];
+          }
+        }
+      }
+      if (!targetScene) {
+        targetScene = sortedScenes.find(s => s.id === activeSceneId) || sortedScenes[0];
+      }
+
+      if (!targetScene) {
+        notify({ tone: 'warning', title: 'Target scene not found', message: 'Could not resolve scene for proposed update.' });
+        return false;
+      }
+
+      const currentOutline = targetScene.outline || { summary: '', beats: [] };
+      let newBeats = [...currentOutline.beats];
+
+      if (Array.isArray(action.addBeats) && action.addBeats.length > 0) {
+        const addedObjects = action.addBeats.map((bText: string) => ({
+          id: 'beat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          text: String(bText).trim(),
+          completed: false
+        }));
+        newBeats = [...newBeats, ...addedObjects];
+      }
+
+      const newSummary = action.summary !== undefined ? String(action.summary).trim() : currentOutline.summary;
+
+      updateSceneOutline(targetScene.id, {
+        summary: newSummary,
+        beats: newBeats
+      });
+
+      if (action.location || action.pov) {
+        updateSceneMetadata(targetScene.id, {
+          ...(action.location ? { location: String(action.location) } : {}),
+          ...(action.pov ? { pov: String(action.pov) } : {})
+        });
+      }
+
+      notify({
+        tone: 'success',
+        title: 'Outline updated!',
+        message: `Applied proposed changes to "${targetScene.title}".`
+      });
+
+      return true;
+    } catch (err: any) {
+      console.error('Error applying AI chat action:', err);
+      notify({ tone: 'error', title: 'Action failed', message: err.message || 'Could not apply action.' });
+      return false;
+    }
   };
 
   return (
@@ -410,6 +554,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       togglePlotBeat,
       deletePlotBeat,
       expandSceneBeatsWithAI,
+      applyAiChatAction,
       setLeftTab,
       setRightTab,
       toggleLeftSidebar,
