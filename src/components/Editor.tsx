@@ -4,6 +4,7 @@ import {
   Columns, Maximize2, Minimize2, Save, CheckCircle2, 
   X, AlertTriangle 
 } from 'lucide-react';
+import { TextHighlightOverlay } from './editor/TextHighlightOverlay';
 
 export const Editor: React.FC = () => {
   const {
@@ -15,6 +16,7 @@ export const Editor: React.FC = () => {
     approveMemory,
     rejectMemory,
     triggerMemoryGeneration,
+    selectedText,
     setSelectedText
   } = useStore();
 
@@ -27,11 +29,19 @@ export const Editor: React.FC = () => {
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [autosaveText, setAutosaveText] = useState('Saved locally');
   const [memoryFactDrafts, setMemoryFactDrafts] = useState<Array<{ enabled: boolean; entityName: string; factType: string; factText: string; entityType: any; entityId?: string | null; status?: any }>>([]);
+  const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
 
   const mainEditorRef = useRef<HTMLTextAreaElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
 
   const activeScene = project.scenes.find(s => s.id === activeSceneId);
   const secondaryScene = project.scenes.find(s => s.id === secondarySceneId) || project.scenes[0];
+
+  useEffect(() => {
+    if (!selectedText) {
+      setSelectionRange(null);
+    }
+  }, [selectedText]);
 
   useEffect(() => {
     if (!pendingMemoryUpdate) {
@@ -62,9 +72,19 @@ export const Editor: React.FC = () => {
     const start = textarea.selectionStart;
     const end = textarea.selectionEnd;
     if (start !== end) {
-      setSelectedText(textarea.value.substring(start, end));
+      const text = textarea.value.substring(start, end);
+      setSelectedText(text);
+      setSelectionRange({ start, end });
     } else {
       setSelectedText('');
+      setSelectionRange(null);
+    }
+  };
+
+  const handleScroll = (e: React.UIEvent<HTMLTextAreaElement>) => {
+    if (overlayRef.current) {
+      overlayRef.current.scrollTop = e.currentTarget.scrollTop;
+      overlayRef.current.scrollLeft = e.currentTarget.scrollLeft;
     }
   };
 
@@ -187,6 +207,12 @@ export const Editor: React.FC = () => {
         
         {/* Main Editor Panel */}
         <div className="editor-container">
+          <TextHighlightOverlay
+            content={activeScene.content}
+            selectedText={selectedText}
+            selectionRange={selectionRange}
+            overlayRef={overlayRef}
+          />
           <textarea
             ref={mainEditorRef}
             className="editor-textarea"
@@ -194,6 +220,7 @@ export const Editor: React.FC = () => {
             onChange={handleTextChange}
             onSelect={handleSelectText}
             onKeyUp={handleSelectText}
+            onScroll={handleScroll}
             placeholder="Type your manuscript here. Use standard Markdown formats (# for Headings, ** for bold)."
             autoFocus
           />
