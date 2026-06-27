@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus } from 'lucide-react';
+import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus, Mic, MicOff } from 'lucide-react';
 import { ProseRevisionCard } from './ProseRevisionCard';
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { notify } from '../../services/notifications';
+import { useAssemblyAISpeech } from '../../hooks/useAssemblyAISpeech';
 
 export const AiCoWriter: React.FC = () => {
   const {
@@ -28,7 +29,25 @@ export const AiCoWriter: React.FC = () => {
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const baseTextRef = useRef('');
   const activeConv = conversations.find(c => c.id === activeConversationId);
+
+  const { isListening, toggleListening } = useAssemblyAISpeech({
+    onResult: (speechText) => {
+      setChatInput(speechText);
+    },
+    onError: (errMessage) => {
+      notify({
+        tone: 'error',
+        title: 'AssemblyAI Voice Error',
+        message: errMessage
+      });
+    }
+  });
+
+  const handleMicClick = () => {
+    toggleListening(chatInput);
+  };
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -282,13 +301,37 @@ export const AiCoWriter: React.FC = () => {
         <input 
           type="text" 
           className="form-input" 
-          placeholder="Type brainstorming prompt..."
+          placeholder={isListening ? "Listening... speak now..." : "Type brainstorming prompt..."}
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleChatSubmit(); }}
           disabled={aiRunning}
-          style={{ fontSize: 12, padding: '6px 10px' }}
+          style={{ 
+            fontSize: 12, 
+            padding: '6px 10px',
+            borderColor: isListening ? 'var(--accent-purple)' : undefined
+          }}
         />
+        <button 
+          type="button" 
+          className={`btn ${isListening ? 'btn-danger' : 'btn-secondary'}`}
+          onClick={handleMicClick}
+          disabled={aiRunning}
+          title={isListening ? 'Stop AssemblyAI listening' : 'Dictate with AssemblyAI Speech-to-Text'}
+          style={{ 
+            padding: '6px 10px', 
+            fontSize: 12, 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center',
+            backgroundColor: isListening ? 'rgba(239, 68, 68, 0.2)' : 'var(--bg-secondary)',
+            borderColor: isListening ? '#ef4444' : 'var(--border-color)',
+            color: isListening ? '#ef4444' : 'var(--text-primary)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          {isListening ? <MicOff size={13} className="animate-pulse" /> : <Mic size={13} />}
+        </button>
         <button 
           type="button" 
           className="btn btn-primary"
