@@ -174,6 +174,14 @@ export interface MemoryUpdate {
   status: 'pending' | 'approved' | 'rejected';
 }
 
+export interface ChapterMemory {
+  chapterId: string;
+  summary: string;
+  keyMilestones: string[];
+  characterArcs: string[];
+  lastUpdated: string;
+}
+
 // Full Project State
 export interface ProjectState {
   projectName: string;
@@ -184,6 +192,7 @@ export interface ProjectState {
   snapshots: VersionSnapshot[];
   notes: Note[];
   memoryUpdates: MemoryUpdate[];
+  chapterMemories?: ChapterMemory[];
   continuityFacts: ContinuityFact[];
   bibleItemVersions: BibleItemVersion[];
   settings: {

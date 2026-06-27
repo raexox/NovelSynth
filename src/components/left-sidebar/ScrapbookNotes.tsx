@@ -23,7 +23,7 @@ export const ScrapbookNotes: React.FC = () => {
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+          <div className="notes-grid" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
             {project.notes.map(n => (
               <div 
                 key={n.id} 

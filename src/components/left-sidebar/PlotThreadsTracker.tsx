@@ -18,7 +18,7 @@ export const PlotThreadsTracker: React.FC = () => {
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+      <div className="plot-threads-grid" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {project.plotThreads.map(pt => (
           <div 
             key={pt.id} 

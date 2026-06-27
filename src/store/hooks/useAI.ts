@@ -569,6 +569,24 @@ export const useAI = (
     setPendingMemoryUpdate(null);
   };
 
+  const updateMemoryUpdate = (sceneId: string, updates: Partial<MemoryUpdate>) => {
+    setProject(prev => ({
+      ...prev,
+      memoryUpdates: prev.memoryUpdates.map(m => m.sceneId === sceneId ? { ...m, ...updates } : m)
+    }));
+  };
+
+  const updateChapterMemory = (chapterId: string, summary: string) => {
+    setProject(prev => {
+      const existing = prev.chapterMemories || [];
+      const found = existing.find(c => c.chapterId === chapterId);
+      const updated = found
+        ? existing.map(c => c.chapterId === chapterId ? { ...c, summary, lastUpdated: new Date().toISOString() } : c)
+        : [...existing, { chapterId, summary, keyMilestones: [], characterArcs: [], lastUpdated: new Date().toISOString() }];
+      return { ...prev, chapterMemories: updated };
+    });
+  };
+
   return {
     clearAISuggestions,
     sendChatMessage,
@@ -581,6 +599,8 @@ export const useAI = (
     runResearch,
     triggerMemoryGeneration,
     approveMemory,
-    rejectMemory
+    rejectMemory,
+    updateMemoryUpdate,
+    updateChapterMemory
   };
 };

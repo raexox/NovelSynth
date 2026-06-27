@@ -176,7 +176,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     runResearch,
     triggerMemoryGeneration,
     approveMemory,
-    rejectMemory
+    rejectMemory,
+    updateMemoryUpdate,
+    updateChapterMemory
   } = useAI(
     activeBookId,
     activeSceneId,
@@ -380,6 +382,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       approveMemory,
       rejectMemory,
       triggerMemoryGeneration,
+      updateMemoryUpdate,
+      updateChapterMemory,
       clearAISuggestions,
 
       takeSnapshot,

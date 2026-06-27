@@ -49,16 +49,27 @@ export const getApprovedMemoriesBeforeScene = (project: ProjectState, sceneId: s
 export const buildBookContextForScene = (project: ProjectState, scene: Scene): BookContextForScene => {
   const facts = getActiveContinuityFactsForScene(project, scene.id);
   const memories = getApprovedMemoriesBeforeScene(project, scene.id);
-  const recentMemories = memories.slice(-3);
+  const recentMemories = memories.slice(-5);
+
+  const currentChapter = project.chapters.find(c => c.id === scene.chapterId);
+  const priorChapterMemories = (project.chapterMemories || []).filter(cm => {
+    const chap = project.chapters.find(c => c.id === cm.chapterId);
+    return chap && currentChapter && chap.order < currentChapter.order;
+  });
 
   const factLines = facts.slice(0, 80).map(fact => {
     const label = [fact.entityName, fact.factType].filter(Boolean).join(' / ');
     return `- ${label || fact.entityType}: ${fact.factText}`;
   });
 
-  const memoryLines = memories.slice(-20).map(memory => {
+  const chapterRecapLines = priorChapterMemories.map(cm => {
+    const chap = project.chapters.find(c => c.id === cm.chapterId);
+    return `[Chapter Recap: ${chap?.title || 'Prior Chapter'}] ${cm.summary}`;
+  });
+
+  const memoryLines = recentMemories.map(memory => {
     const sourceScene = project.scenes.find(s => s.id === memory.sceneId);
-    return `- ${sourceScene?.title || 'Earlier scene'}: ${memory.summary}`;
+    return `- ${sourceScene?.title || 'Recent scene'}: ${memory.summary}`;
   });
 
   return {
@@ -69,12 +80,13 @@ export const buildBookContextForScene = (project: ProjectState, scene: Scene): B
     memoriesCount: memories.length,
     recentMemoryCount: recentMemories.length,
     summary: [
-      `Context mode: Book-aware past canon.`,
+      `Context mode: Book-aware hierarchical canon.`,
       `Active continuity facts included: ${facts.length}.`,
-      `Approved prior scene memories included: ${memories.length}.`,
+      `Prior chapter recaps: ${priorChapterMemories.length}, recent scene memories: ${recentMemories.length}.`,
       factLines.length ? `Continuity facts:\n${factLines.join('\n')}` : 'Continuity facts: none approved yet.',
-      memoryLines.length ? `Prior memory summaries:\n${memoryLines.join('\n')}` : 'Prior memory summaries: none approved yet.'
-    ].join('\n\n')
+      chapterRecapLines.length ? `Prior Chapter High-Level Recaps:\n${chapterRecapLines.join('\n')}` : '',
+      memoryLines.length ? `Recent Scene Memories:\n${memoryLines.join('\n')}` : 'Prior memory summaries: none approved yet.'
+    ].filter(Boolean).join('\n\n')
   };
 };
 

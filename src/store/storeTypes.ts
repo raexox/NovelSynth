@@ -99,6 +99,8 @@ export interface StoreContextType {
   approveMemory: (selectedFacts?: ProposedContinuityFact[]) => Promise<void>;
   rejectMemory: () => void;
   triggerMemoryGeneration: (sceneId: string) => void;
+  updateMemoryUpdate: (sceneId: string, updates: Partial<MemoryUpdate>) => void;
+  updateChapterMemory: (chapterId: string, summary: string) => void;
   clearAISuggestions: () => void;
 
   // Snapshots
