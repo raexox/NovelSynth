@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
+import { buildBookContextForScene } from '../../services/continuityContext';
 import { 
-  RefreshCw, Loader2, ChevronDown, ChevronRight, HelpCircle, UserCheck
+  RefreshCw, Loader2, ChevronDown, ChevronRight, HelpCircle, UserCheck, BookOpen
 } from 'lucide-react';
 
 export const ProseDiagnostics: React.FC = () => {
   const {
+    project,
+    activeSceneId,
     aiRunning,
     continuityWarnings,
     dialogueWarnings,
@@ -18,6 +21,9 @@ export const ProseDiagnostics: React.FC = () => {
   const [continuityExpanded, setContinuityExpanded] = useState(true);
   const [voiceExpanded, setVoiceExpanded] = useState(true);
   const [pacingExpanded, setPacingExpanded] = useState(true);
+  const [contextExpanded, setContextExpanded] = useState(false);
+  const activeScene = project.scenes.find(scene => scene.id === activeSceneId);
+  const bookContext = activeScene ? buildBookContextForScene(project, activeScene) : null;
 
   const handleRunAllDiagnostics = async () => {
     await runAIContinuityCheck();
@@ -53,6 +59,45 @@ export const ProseDiagnostics: React.FC = () => {
           </>
         )}
       </button>
+
+      {bookContext && (
+        <div className="sidebar-section-card" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 6, overflow: 'hidden' }}>
+          <div
+            className="sidebar-section-card-header"
+            style={{ padding: '8px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: 'var(--bg-secondary)', borderBottom: contextExpanded ? '1px solid var(--border-color)' : 'none' }}
+            onClick={() => setContextExpanded(!contextExpanded)}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11.5, fontWeight: 700, color: 'var(--text-secondary)' }}>
+              {contextExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              <BookOpen size={13} />
+              <span>CONTEXT USED</span>
+            </div>
+            <span className="badge" style={{ fontSize: 9, padding: '1px 5px', borderRadius: 8, backgroundColor: 'var(--accent-purple-dim)', color: 'var(--accent-purple)', border: '1px solid var(--accent-purple)' }}>
+              Book-aware
+            </span>
+          </div>
+          <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+              <div style={{ padding: 8, border: '1px solid var(--border-color)', borderRadius: 4, background: 'var(--bg-primary)', fontSize: 11 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>{bookContext.factsCount}</strong>
+                <span style={{ color: 'var(--text-muted)', marginLeft: 5 }}>active facts</span>
+              </div>
+              <div style={{ padding: 8, border: '1px solid var(--border-color)', borderRadius: 4, background: 'var(--bg-primary)', fontSize: 11 }}>
+                <strong style={{ color: 'var(--text-primary)' }}>{bookContext.memoriesCount}</strong>
+                <span style={{ color: 'var(--text-muted)', marginLeft: 5 }}>prior memories</span>
+              </div>
+            </div>
+            <div style={{ fontSize: 10.5, color: 'var(--text-secondary)', lineHeight: 1.35 }}>
+              Context mode: Book-aware past canon. Diagnostics use approved facts and memories established before or at this scene.
+            </div>
+            {contextExpanded && (
+              <pre style={{ whiteSpace: 'pre-wrap', margin: 0, maxHeight: 180, overflow: 'auto', padding: 8, border: '1px solid var(--border-color)', borderRadius: 4, background: 'var(--bg-primary)', color: 'var(--text-secondary)', fontSize: 10.5, lineHeight: 1.4 }}>
+                {bookContext.summary}
+              </pre>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 1. Continuity Checker Warnings */}
       <div className="sidebar-section-card" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 6, overflow: 'hidden' }}>

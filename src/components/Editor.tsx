@@ -26,11 +26,29 @@ export const Editor: React.FC = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [typewriterMode, setTypewriterMode] = useState(false);
   const [autosaveText, setAutosaveText] = useState('Saved locally');
+  const [memoryFactDrafts, setMemoryFactDrafts] = useState<Array<{ enabled: boolean; entityName: string; factType: string; factText: string; entityType: any; entityId?: string | null; status?: any }>>([]);
 
   const mainEditorRef = useRef<HTMLTextAreaElement>(null);
 
   const activeScene = project.scenes.find(s => s.id === activeSceneId);
   const secondaryScene = project.scenes.find(s => s.id === secondarySceneId) || project.scenes[0];
+
+  useEffect(() => {
+    if (!pendingMemoryUpdate) {
+      setMemoryFactDrafts([]);
+      return;
+    }
+
+    setMemoryFactDrafts((pendingMemoryUpdate.proposedFacts || []).map(fact => ({
+      enabled: true,
+      entityType: fact.entityType,
+      entityId: fact.entityId,
+      entityName: fact.entityName || '',
+      factType: fact.factType || 'other',
+      factText: fact.factText || '',
+      status: fact.status || 'active'
+    })));
+  }, [pendingMemoryUpdate]);
 
   // Auto-Save animation simulation
   const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -314,7 +332,54 @@ export const Editor: React.FC = () => {
               <div>
                 <label className="form-label">Story Bible Updates</label>
                 <div style={{ fontSize: 11, color: 'var(--accent-gold)', border: '1px solid var(--accent-gold-dim)', backgroundColor: 'var(--accent-gold-dim)', padding: 8, borderRadius: 4 }}>
-                  &bull; Automatically update Character: <strong>Kaelen</strong> history with event.
+                  &bull; Approved facts are added to the Continuity Ledger. Matching Story Bible profiles receive a version checkpoint before canon changes are logged.
+                </div>
+              </div>
+
+              <div>
+                <label className="form-label">Continuity Ledger Facts</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {memoryFactDrafts.length === 0 && (
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', border: '1px dashed var(--border-color)', borderRadius: 4, padding: 10 }}>
+                      No structured ledger facts were proposed for this scene.
+                    </div>
+                  )}
+                  {memoryFactDrafts.map((fact, index) => (
+                    <div key={index} style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: 8, alignItems: 'start', border: '1px solid var(--border-color)', borderRadius: 4, padding: 8, backgroundColor: 'var(--bg-tertiary)' }}>
+                      <input
+                        type="checkbox"
+                        checked={fact.enabled}
+                        onChange={e => setMemoryFactDrafts(current => current.map((item, i) => i === index ? { ...item, enabled: e.target.checked } : item))}
+                        style={{ marginTop: 7 }}
+                        aria-label={`Include continuity fact ${index + 1}`}
+                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6 }}>
+                          <input
+                            className="form-input"
+                            style={{ fontSize: 11, padding: '5px 7px' }}
+                            value={fact.entityName}
+                            onChange={e => setMemoryFactDrafts(current => current.map((item, i) => i === index ? { ...item, entityName: e.target.value } : item))}
+                            placeholder="Entity"
+                          />
+                          <input
+                            className="form-input"
+                            style={{ fontSize: 11, padding: '5px 7px' }}
+                            value={fact.factType}
+                            onChange={e => setMemoryFactDrafts(current => current.map((item, i) => i === index ? { ...item, factType: e.target.value } : item))}
+                            placeholder="Fact type"
+                          />
+                        </div>
+                        <textarea
+                          className="form-textarea"
+                          style={{ minHeight: 54, fontSize: 11, padding: '6px 7px' }}
+                          value={fact.factText}
+                          onChange={e => setMemoryFactDrafts(current => current.map((item, i) => i === index ? { ...item, factText: e.target.value } : item))}
+                          placeholder="Canonical fact"
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
@@ -327,7 +392,10 @@ export const Editor: React.FC = () => {
               <button 
                 className="btn btn-primary" 
                 style={{ backgroundColor: 'var(--color-success)' }}
-                onClick={approveMemory}
+                onClick={() => approveMemory(memoryFactDrafts.length > 0
+                  ? memoryFactDrafts.filter(fact => fact.enabled).map(({ enabled: _enabled, ...fact }) => fact)
+                  : undefined
+                )}
               >
                 Approve & Add to Bible
               </button>

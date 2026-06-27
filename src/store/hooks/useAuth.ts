@@ -19,6 +19,8 @@ const EMPTY_PROJECT_STATE: ProjectState = {
   snapshots: [],
   notes: [],
   memoryUpdates: [],
+  continuityFacts: [],
+  bibleItemVersions: [],
   settings: {
     apiKey: '',
     model: 'gemini-1.5-flash',

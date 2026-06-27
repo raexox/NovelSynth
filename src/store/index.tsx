@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import type { User } from '@supabase/supabase-js';
-import type { ProjectState, MemoryUpdate } from '../types';
+import type { BibleCategory, ProjectState, MemoryUpdate } from '../types';
 import type { StoreContextType } from './storeTypes';
 
 /**
@@ -33,6 +33,8 @@ const EMPTY_PROJECT_STATE: ProjectState = {
   snapshots: [],
   notes: [],
   memoryUpdates: [],
+  continuityFacts: [],
+  bibleItemVersions: [],
   settings: {
     apiKey: '',
     model: 'gemini-1.5-flash',
@@ -218,7 +220,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   // 5. Story Bible Hook
-  const { updateBibleItem, addBibleItem, deleteBibleItem } = useStoryBible(
+  const {
+    updateBibleItem,
+    addBibleItem,
+    deleteBibleItem,
+    addContinuityFact,
+    updateContinuityFact,
+    createBibleItemVersion
+  } = useStoryBible(
     activeBookId,
     setProject,
     activeBibleItemId,
@@ -261,9 +270,14 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       }
     }));
   };
-  const setBibleCategory = (cat: 'characters' | 'locations' | 'factions' | 'powerSystems') => {
+  const setBibleCategory = (cat: BibleCategory) => {
     setActiveBibleCategory(cat);
     setBibleItemId(null);
+  };
+  const loadBibleItemVersions = (itemId: string) => {
+    return project.bibleItemVersions
+      .filter(version => version.bibleItemId === itemId)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   };
 
   return (
@@ -330,6 +344,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       updateBibleItem,
       addBibleItem,
       deleteBibleItem,
+      addContinuityFact,
+      updateContinuityFact,
+      createBibleItemVersion,
+      loadBibleItemVersions,
       addPlotThread,
       updatePlotThread,
       addNote,

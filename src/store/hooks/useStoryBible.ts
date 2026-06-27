@@ -1,5 +1,6 @@
 import { supabase } from '../../services/supabaseClient';
-import type { ProjectState } from '../../types';
+import type { BibleCategory, BibleItemVersion, ContinuityFact, ProjectState } from '../../types';
+import { notify } from '../../services/notifications';
 
 export const useStoryBible = (
   activeBookId: string | null,
@@ -7,7 +8,7 @@ export const useStoryBible = (
   activeBibleItemId: string | null,
   setBibleItemId: React.Dispatch<React.SetStateAction<string | null>>
 ) => {
-  const updateBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
+  const updateBibleItem = async (category: BibleCategory, item: any) => {
     try {
       const { id, name, ...data } = item;
       const { error } = await supabase
@@ -35,7 +36,7 @@ export const useStoryBible = (
     }
   };
 
-  const addBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => {
+  const addBibleItem = async (category: BibleCategory, item: any) => {
     if (!activeBookId) return;
     try {
       const { id: _id, name, ...data } = item;
@@ -71,7 +72,7 @@ export const useStoryBible = (
     }
   };
 
-  const deleteBibleItem = async (category: 'characters' | 'locations' | 'factions' | 'powerSystems', id: string) => {
+  const deleteBibleItem = async (category: BibleCategory, id: string) => {
     try {
       const { error } = await supabase
         .from('story_bible_items')
@@ -95,9 +96,173 @@ export const useStoryBible = (
     }
   };
 
+  const addContinuityFact = async (fact: Omit<ContinuityFact, 'id' | 'createdAt'>) => {
+    if (!activeBookId) return null;
+
+    const localFact: ContinuityFact = {
+      ...fact,
+      id: `local-fact-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      bookId: activeBookId,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('continuity_facts')
+        .insert({
+          book_id: activeBookId,
+          scene_id: fact.sceneId || null,
+          chapter_id: fact.chapterId || null,
+          entity_type: fact.entityType,
+          entity_id: fact.entityId || null,
+          entity_name: fact.entityName,
+          fact_type: fact.factType,
+          fact_text: fact.factText,
+          status: fact.status,
+          starts_at_scene_id: fact.startsAtSceneId || fact.sceneId || null,
+          ends_at_scene_id: fact.endsAtSceneId || null,
+          source: fact.source
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const insertedFact: ContinuityFact = {
+        id: data.id,
+        bookId: data.book_id,
+        sceneId: data.scene_id || '',
+        chapterId: data.chapter_id || '',
+        entityType: data.entity_type,
+        entityId: data.entity_id,
+        entityName: data.entity_name || '',
+        factType: data.fact_type || '',
+        factText: data.fact_text || '',
+        status: data.status,
+        startsAtSceneId: data.starts_at_scene_id || data.scene_id || '',
+        endsAtSceneId: data.ends_at_scene_id,
+        source: data.source,
+        createdAt: data.created_at || new Date().toISOString()
+      };
+
+      setProject(prev => ({
+        ...prev,
+        continuityFacts: [...prev.continuityFacts, insertedFact]
+      }));
+
+      return insertedFact;
+    } catch (err) {
+      console.error('Failed to add continuity fact:', err);
+      notify({
+        tone: 'warning',
+        title: 'Ledger fact not saved to database',
+        message: 'The fact is visible for this session only. Check that the continuity ledger migrations were applied.'
+      });
+      setProject(prev => ({
+        ...prev,
+        continuityFacts: [...prev.continuityFacts, localFact]
+      }));
+      return localFact;
+    }
+  };
+
+  const updateContinuityFact = async (id: string, updates: Partial<ContinuityFact>) => {
+    try {
+      const dbUpdates: any = {};
+      if (updates.factText !== undefined) dbUpdates.fact_text = updates.factText;
+      if (updates.factType !== undefined) dbUpdates.fact_type = updates.factType;
+      if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.endsAtSceneId !== undefined) dbUpdates.ends_at_scene_id = updates.endsAtSceneId || null;
+
+      if (!id.startsWith('local-fact-')) {
+        const { error } = await supabase
+          .from('continuity_facts')
+          .update(dbUpdates)
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+
+      setProject(prev => ({
+        ...prev,
+        continuityFacts: prev.continuityFacts.map(fact => fact.id === id ? { ...fact, ...updates } : fact)
+      }));
+    } catch (err) {
+      console.error('Failed to update continuity fact:', err);
+    }
+  };
+
+  const createBibleItemVersion = async (version: Omit<BibleItemVersion, 'id' | 'createdAt'>) => {
+    if (!activeBookId || !version.bibleItemId) return null;
+
+    const localVersion: BibleItemVersion = {
+      ...version,
+      id: `local-version-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      bookId: activeBookId,
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      const { data, error } = await supabase
+        .from('bible_item_versions')
+        .insert({
+          book_id: activeBookId,
+          bible_item_id: version.bibleItemId,
+          category: version.category,
+          name: version.name,
+          data: version.data || {},
+          source_scene_id: version.sourceSceneId || null,
+          reason: version.reason
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const insertedVersion: BibleItemVersion = {
+        id: data.id,
+        bookId: data.book_id,
+        bibleItemId: data.bible_item_id,
+        category: data.category,
+        name: data.name || '',
+        data: data.data || {},
+        sourceSceneId: data.source_scene_id,
+        reason: data.reason || '',
+        createdAt: data.created_at || new Date().toISOString()
+      };
+
+      setProject(prev => ({
+        ...prev,
+        bibleItemVersions: [...prev.bibleItemVersions, insertedVersion]
+      }));
+
+      return insertedVersion;
+    } catch (err) {
+      console.error('Failed to create bible item version:', err);
+      notify({
+        tone: 'warning',
+        title: 'Profile version not saved to database',
+        message: 'The version is visible for this session only. Check that the continuity ledger migrations were applied.'
+      });
+      setProject(prev => ({
+        ...prev,
+        bibleItemVersions: [...prev.bibleItemVersions, localVersion]
+      }));
+      return localVersion;
+    }
+  };
+
+  const loadBibleItemVersions = (_itemId: string) => {
+    return [] as BibleItemVersion[];
+  };
+
   return {
     updateBibleItem,
     addBibleItem,
-    deleteBibleItem
+    deleteBibleItem,
+    addContinuityFact,
+    updateContinuityFact,
+    createBibleItemVersion,
+    loadBibleItemVersions
   };
 };

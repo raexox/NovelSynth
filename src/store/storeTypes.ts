@@ -1,6 +1,7 @@
 import type { User } from '@supabase/supabase-js';
 import type { 
-  ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate, Chapter, Scene 
+  ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate, Chapter, Scene,
+  ContinuityFact, BibleItemVersion, ProposedContinuityFact, BibleCategory
 } from '../types';
 
 /**
@@ -70,11 +71,15 @@ export interface StoreContextType {
   setRightTab: (tab: string) => void;
   toggleLeftSidebar: () => void;
   toggleRightSidebar: () => void;
-  setBibleCategory: (cat: 'characters' | 'locations' | 'factions' | 'powerSystems') => void;
+  setBibleCategory: (cat: BibleCategory) => void;
   setBibleItemId: (id: string | null) => void;
-  updateBibleItem: (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => void;
-  addBibleItem: (category: 'characters' | 'locations' | 'factions' | 'powerSystems', item: any) => void;
-  deleteBibleItem: (category: 'characters' | 'locations' | 'factions' | 'powerSystems', id: string) => void;
+  updateBibleItem: (category: BibleCategory, item: any) => void;
+  addBibleItem: (category: BibleCategory, item: any) => void;
+  deleteBibleItem: (category: BibleCategory, id: string) => void;
+  addContinuityFact: (fact: Omit<ContinuityFact, 'id' | 'createdAt'>) => Promise<ContinuityFact | null>;
+  updateContinuityFact: (id: string, updates: Partial<ContinuityFact>) => Promise<void>;
+  createBibleItemVersion: (version: Omit<BibleItemVersion, 'id' | 'createdAt'>) => Promise<BibleItemVersion | null>;
+  loadBibleItemVersions: (itemId: string) => BibleItemVersion[];
   addPlotThread: (thread: Partial<PlotThread>) => void;
   updatePlotThread: (thread: PlotThread) => void;
   addNote: (title: string, content: string) => void;
@@ -87,7 +92,7 @@ export interface StoreContextType {
   runAIDialogueCheck: () => Promise<void>;
   runPacingAnalysis: () => Promise<void>;
   runResearch: (query: string) => Promise<void>;
-  approveMemory: () => Promise<void>;
+  approveMemory: (selectedFacts?: ProposedContinuityFact[]) => Promise<void>;
   rejectMemory: () => void;
   triggerMemoryGeneration: (sceneId: string) => void;
   clearAISuggestions: () => void;

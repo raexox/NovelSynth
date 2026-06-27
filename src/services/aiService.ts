@@ -1,3 +1,4 @@
+import type { BookContextForScene } from './continuityContext';
 import type { ProjectState, StoryBible, SceneMetadata } from '../types';
 
 /**
@@ -220,7 +221,8 @@ export async function getAIContinuityCheck(
   content: string,
   bible: StoryBible,
   metadata: SceneMetadata,
-  settings: ProjectState['settings']
+  settings: ProjectState['settings'],
+  bookContext?: BookContextForScene
 ): Promise<Array<{ title: string; content: string; severity: 'low' | 'medium' | 'high' }>> {
 
   const systemInstruction = `You are a developmental novel editor and continuity manager. Your task is to audit the active scene draft against the Story Bible details and scene metadata to find any contradictions, timeline errors, character ability clashing, appearance discrepancies, setting/technology clashes, or location mismatches.
@@ -237,6 +239,9 @@ Date: ${metadata.date}
 Time: ${metadata.time}
 Location: ${metadata.location}
 Characters present: ${JSON.stringify(metadata.characters)}
+
+Book-aware past canon context:
+${bookContext?.summary || 'No approved prior book context available.'}
 
 Output format:
 Return a JSON object containing a "warnings" list:
@@ -262,13 +267,17 @@ ${content}`;
 export async function getAIDialogueCheck(
   content: string,
   bible: StoryBible,
-  settings: ProjectState['settings']
+  settings: ProjectState['settings'],
+  bookContext?: BookContextForScene
 ): Promise<Array<{ title: string; quote: string; content: string }>> {
 
   const systemInstruction = `You are a novel editor and dialogue coach. Audits character dialogue in the scene draft to ensure it aligns with their personality, relationships, speaking style, vocabulary, and emotional states described in the Story Bible.
 
 Story Bible character profiles:
 ${JSON.stringify(bible.characters)}
+
+Book-aware past canon context:
+${bookContext?.summary || 'No approved prior book context available.'}
 
 Output format:
 Return a JSON object containing a "dialogueWarnings" list:
@@ -341,7 +350,7 @@ export async function getAIMemoryGeneration(
   settings: ProjectState['settings']
 ): Promise<any> {
 
-  const systemInstruction = `You are a novel memory summarizer. Summarize the completed scene to produce a structured record of events, facts, unresolved mysteries, and character development, ready to update character and world histories.
+  const systemInstruction = `You are a novel memory summarizer and continuity ledger extractor. Summarize the completed scene to produce a structured record of events, facts, unresolved mysteries, and character development, ready to update character and world histories.
 
 Active Scene Metadata:
 POV: ${metadata.pov}
@@ -354,12 +363,28 @@ Return a JSON object:
   "summary": "1-sentence summary of the scene events.",
   "events": ["Event 1", "Event 2", "Event 3"],
   "newFacts": ["New fact revealed 1", "New fact revealed 2"],
+  "proposedFacts": [
+    {
+      "entityType": "character" | "location" | "faction" | "powerSystem" | "object" | "timeline" | "relationship",
+      "entityName": "Name of the entity or topic",
+      "factType": "appearance | injury | relationship | secret | object_state | location_state | timeline | ability | other",
+      "factText": "A concise canonical fact established by this scene.",
+      "status": "active"
+    }
+  ],
   "unresolvedQuestions": ["Mystery or promise left open 1"],
   "emotionalChanges": ["Emotional shift for characters present"],
   "characterDevelopment": ["Developmental impact of this scene"],
   "timelineUpdates": ["Chronology tracking"],
   "locationUpdates": ["Location status updates"]
-}`;
+}
+
+Rules for proposedFacts:
+- Every important item in newFacts should also appear as one proposedFacts entry.
+- Use concise canonical wording.
+- Prefer entityType "character" for character abilities, injuries, secrets, appearance, fears, relationships, goals, and backstory.
+- Use entityName exactly as it appears in the scene or metadata when possible.
+- If a fact is not tied to a character/location/faction/system, use entityType "timeline".`;
 
   const prompt = `Completed scene text:
 ${content}`;

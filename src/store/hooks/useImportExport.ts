@@ -28,6 +28,8 @@ export const useImportExport = (
         await supabase.from('story_bible_items').delete().eq('book_id', activeBookId);
         await supabase.from('plot_threads').delete().eq('book_id', activeBookId);
         await supabase.from('notes').delete().eq('book_id', activeBookId);
+        await supabase.from('bible_item_versions').delete().eq('book_id', activeBookId);
+        await supabase.from('continuity_facts').delete().eq('book_id', activeBookId);
         await supabase.from('memory_updates').delete().eq('book_id', activeBookId);
         await supabase.from('snapshots').delete().eq('book_id', activeBookId);
 
@@ -127,6 +129,47 @@ export const useImportExport = (
               status: m.status
             });
           }
+        }
+
+        const { data: importedScenes } = await supabase.from('scenes').select('id, title, chapter_id').eq('book_id', activeBookId);
+        const { data: importedBibleItems } = await supabase.from('story_bible_items').select('id, name, category').eq('book_id', activeBookId);
+
+        for (const fact of (parsed.continuityFacts || [])) {
+          const sourceScene = importedScenes?.find((s: any) => s.title === parsed.scenes.find((sc: any) => sc.id === fact.sceneId)?.title);
+          const startsAtScene = importedScenes?.find((s: any) => s.title === parsed.scenes.find((sc: any) => sc.id === fact.startsAtSceneId)?.title);
+          const endsAtScene = importedScenes?.find((s: any) => s.title === parsed.scenes.find((sc: any) => sc.id === fact.endsAtSceneId)?.title);
+          const entityItem = importedBibleItems?.find((i: any) => i.name === fact.entityName);
+
+          await supabase.from('continuity_facts').insert({
+            book_id: activeBookId,
+            scene_id: sourceScene?.id || null,
+            chapter_id: sourceScene?.chapter_id || null,
+            entity_type: fact.entityType,
+            entity_id: entityItem?.id || null,
+            entity_name: fact.entityName || '',
+            fact_type: fact.factType || '',
+            fact_text: fact.factText || '',
+            status: fact.status || 'active',
+            starts_at_scene_id: startsAtScene?.id || sourceScene?.id || null,
+            ends_at_scene_id: endsAtScene?.id || null,
+            source: fact.source || 'memory'
+          });
+        }
+
+        for (const version of (parsed.bibleItemVersions || [])) {
+          const item = importedBibleItems?.find((i: any) => i.name === version.name && i.category === version.category);
+          const sourceScene = importedScenes?.find((s: any) => s.title === parsed.scenes.find((sc: any) => sc.id === version.sourceSceneId)?.title);
+          if (!item) continue;
+
+          await supabase.from('bible_item_versions').insert({
+            book_id: activeBookId,
+            bible_item_id: item.id,
+            category: version.category,
+            name: version.name || item.name,
+            data: version.data || {},
+            source_scene_id: sourceScene?.id || null,
+            reason: version.reason || 'Imported version'
+          });
         }
 
         // Reload Book

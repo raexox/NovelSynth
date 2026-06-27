@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
+import { buildBookContextForScene, findBibleItemByEntity } from '../../services/continuityContext';
 import { 
   getAIRevision, 
   getAIContinuityCheck, 
@@ -9,8 +10,79 @@ import {
   getAIMemoryGeneration,
   getAIChatResponse 
 } from '../../services/aiService';
-import type { ProjectState, MemoryUpdate } from '../../types';
+import type { ContinuityFact, BibleItemVersion, ProjectState, MemoryUpdate, ProposedContinuityFact } from '../../types';
 import { notify } from '../../services/notifications';
+
+const inferProposedFactsFromMemory = (
+  rawFacts: string[],
+  scene: ProjectState['scenes'][number],
+  project: ProjectState
+): ProposedContinuityFact[] => {
+  return rawFacts
+    .filter(fact => fact.trim().length > 0)
+    .map(fact => {
+      const normalizedFact = fact.toLowerCase();
+      const character = project.storyBible.characters.find(c => normalizedFact.includes(c.name.toLowerCase()));
+      const location = project.storyBible.locations.find(l => normalizedFact.includes(l.name.toLowerCase()));
+      const faction = project.storyBible.factions.find(f => normalizedFact.includes(f.name.toLowerCase()));
+      const powerSystem = project.storyBible.powerSystems.find(p => normalizedFact.includes(p.name.toLowerCase()));
+      const povCharacter = project.storyBible.characters.find(c => c.name.toLowerCase() === scene.metadata.pov.toLowerCase());
+
+      if (character || (!location && !faction && !powerSystem && povCharacter)) {
+        const entity = character || povCharacter;
+        return {
+          entityType: 'character',
+          entityId: entity?.id || null,
+          entityName: entity?.name || scene.metadata.pov || 'Character',
+          factType: 'other',
+          factText: fact,
+          status: 'active'
+        };
+      }
+
+      if (location) {
+        return {
+          entityType: 'location',
+          entityId: location.id,
+          entityName: location.name,
+          factType: 'location_state',
+          factText: fact,
+          status: 'active'
+        };
+      }
+
+      if (faction) {
+        return {
+          entityType: 'faction',
+          entityId: faction.id,
+          entityName: faction.name,
+          factType: 'faction',
+          factText: fact,
+          status: 'active'
+        };
+      }
+
+      if (powerSystem) {
+        return {
+          entityType: 'powerSystem',
+          entityId: powerSystem.id,
+          entityName: powerSystem.name,
+          factType: 'power_system',
+          factText: fact,
+          status: 'active'
+        };
+      }
+
+      return {
+        entityType: 'timeline',
+        entityId: null,
+        entityName: scene.title,
+        factType: 'timeline',
+        factText: fact,
+        status: 'active'
+      };
+    });
+};
 
 /**
  * Custom hook managing AI analysis, prompt contexts, history logs, and interactive chat.
@@ -172,7 +244,8 @@ export const useAI = (
     setAiError(null);
 
     try {
-      const warnings = await getAIContinuityCheck(scene.content, project.storyBible, scene.metadata, project.settings);
+      const bookContext = buildBookContextForScene(project, scene);
+      const warnings = await getAIContinuityCheck(scene.content, project.storyBible, scene.metadata, project.settings, bookContext);
       if (warnings.length === 0) {
         setContinuityWarnings([
           {
@@ -201,7 +274,8 @@ export const useAI = (
     setAiError(null);
 
     try {
-      const warnings = await getAIDialogueCheck(scene.content, project.storyBible, project.settings);
+      const bookContext = buildBookContextForScene(project, scene);
+      const warnings = await getAIDialogueCheck(scene.content, project.storyBible, project.settings, bookContext);
       if (warnings.length === 0) {
         setDialogueWarnings([
           {
@@ -265,8 +339,22 @@ export const useAI = (
 
     try {
       const memory = await getAIMemoryGeneration(scene.content, scene.metadata, project.settings);
+      const newFacts = memory.newFacts || [];
+      const proposedFacts = memory.proposedFacts?.length
+        ? memory.proposedFacts
+        : inferProposedFactsFromMemory(newFacts, scene, project);
+
       setPendingMemoryUpdate({
-        ...memory,
+        summary: memory.summary || '',
+        events: memory.events || [],
+        newFacts,
+        proposedFacts,
+        revealedInfo: memory.revealedInfo || [],
+        unresolvedQuestions: memory.unresolvedQuestions || [],
+        emotionalChanges: memory.emotionalChanges || [],
+        characterDevelopment: memory.characterDevelopment || [],
+        timelineUpdates: memory.timelineUpdates || [],
+        locationUpdates: memory.locationUpdates || [],
         sceneId,
         status: 'pending'
       });
@@ -277,7 +365,7 @@ export const useAI = (
     }
   };
 
-  const approveMemory = async () => {
+  const approveMemory = async (selectedFacts?: ProposedContinuityFact[]) => {
     if (!pendingMemoryUpdate || !activeBookId) return;
     
     try {
@@ -301,7 +389,9 @@ export const useAI = (
       if (error) throw error;
       
       const scene = project.scenes.find(s => s.id === pendingMemoryUpdate.sceneId);
+      if (!scene) return;
       const povCharName = scene?.metadata.pov || '';
+      const factsToCommit = selectedFacts ?? pendingMemoryUpdate.proposedFacts ?? inferProposedFactsFromMemory(pendingMemoryUpdate.newFacts, scene, project);
       
       const charToUpdate = project.storyBible.characters.find(c => c.name.toLowerCase() === povCharName.toLowerCase());
       
@@ -317,6 +407,117 @@ export const useAI = (
             data: charData
           })
           .eq('id', charId);
+      }
+
+      const insertedFacts: ContinuityFact[] = [];
+      const insertedVersions: BibleItemVersion[] = [];
+      let factPersistenceFailed = false;
+      let versionPersistenceFailed = false;
+
+      for (const fact of factsToCommit) {
+        if (!fact.factText?.trim()) continue;
+
+        const matchedItem = fact.entityId
+          ? [...project.storyBible.characters, ...project.storyBible.locations, ...project.storyBible.factions, ...project.storyBible.powerSystems].find((item: any) => item.id === fact.entityId) || null
+          : findBibleItemByEntity(project, fact.entityType, fact.entityName);
+        const matchedCategory =
+          matchedItem && project.storyBible.characters.some(item => item.id === matchedItem.id) ? 'characters' :
+          matchedItem && project.storyBible.locations.some(item => item.id === matchedItem.id) ? 'locations' :
+          matchedItem && project.storyBible.factions.some(item => item.id === matchedItem.id) ? 'factions' :
+          matchedItem && project.storyBible.powerSystems.some(item => item.id === matchedItem.id) ? 'powerSystems' :
+          null;
+        const entityId = fact.entityId || matchedItem?.id || null;
+
+        const { data: insertedFact, error: factError } = await supabase
+          .from('continuity_facts')
+          .insert({
+            book_id: activeBookId,
+            scene_id: scene.id,
+            chapter_id: scene.chapterId,
+            entity_type: fact.entityType,
+            entity_id: entityId,
+            entity_name: fact.entityName || matchedItem?.name || fact.entityType,
+            fact_type: fact.factType || 'other',
+            fact_text: fact.factText,
+            status: fact.status || 'active',
+            starts_at_scene_id: scene.id,
+            ends_at_scene_id: null,
+            source: 'memory'
+          })
+          .select()
+          .single();
+
+        if (factError) {
+          factPersistenceFailed = true;
+          console.warn('Failed to persist continuity fact; keeping it locally for this session.', factError);
+          insertedFacts.push({
+            id: `local-fact-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+            bookId: activeBookId,
+            sceneId: scene.id,
+            chapterId: scene.chapterId,
+            entityType: fact.entityType,
+            entityId,
+            entityName: fact.entityName || matchedItem?.name || fact.entityType,
+            factType: fact.factType || 'other',
+            factText: fact.factText,
+            status: fact.status || 'active',
+            startsAtSceneId: scene.id,
+            endsAtSceneId: null,
+            source: 'memory',
+            createdAt: new Date().toISOString()
+          });
+        } else {
+          insertedFacts.push({
+            id: insertedFact.id,
+            bookId: insertedFact.book_id,
+            sceneId: insertedFact.scene_id || '',
+            chapterId: insertedFact.chapter_id || '',
+            entityType: insertedFact.entity_type,
+            entityId: insertedFact.entity_id,
+            entityName: insertedFact.entity_name || '',
+            factType: insertedFact.fact_type || '',
+            factText: insertedFact.fact_text || '',
+            status: insertedFact.status,
+            startsAtSceneId: insertedFact.starts_at_scene_id || insertedFact.scene_id || '',
+            endsAtSceneId: insertedFact.ends_at_scene_id,
+            source: insertedFact.source,
+            createdAt: insertedFact.created_at || new Date().toISOString()
+          });
+        }
+
+        if (matchedItem && entityId && matchedCategory) {
+          const { id: _id, name, ...versionData } = matchedItem as any;
+          const { data: insertedVersion, error: versionError } = await supabase
+            .from('bible_item_versions')
+            .insert({
+              book_id: activeBookId,
+              bible_item_id: entityId,
+              category: matchedCategory,
+              name,
+              data: versionData,
+              source_scene_id: scene.id,
+              reason: `Memory fact from "${scene.title}"`
+            })
+            .select()
+            .single();
+
+          if (versionError) {
+            versionPersistenceFailed = true;
+            console.warn('Failed to persist bible version for memory fact.', versionError);
+          } else {
+            insertedVersions.push({
+              id: insertedVersion.id,
+              bookId: insertedVersion.book_id,
+              bibleItemId: insertedVersion.bible_item_id,
+              category: insertedVersion.category,
+              name: insertedVersion.name || '',
+              data: insertedVersion.data || {},
+              sourceSceneId: insertedVersion.source_scene_id,
+              reason: insertedVersion.reason || '',
+              createdAt: insertedVersion.created_at || new Date().toISOString()
+            });
+          }
+        }
       }
 
       setProject(prev => {
@@ -336,12 +537,28 @@ export const useAI = (
         return {
           ...prev,
           memoryUpdates: updatedMemories,
+          continuityFacts: [...prev.continuityFacts, ...insertedFacts],
+          bibleItemVersions: [...prev.bibleItemVersions, ...insertedVersions],
           storyBible: {
             ...prev.storyBible,
             characters: updatedCharacters
           }
         };
       });
+      if (factPersistenceFailed) {
+        notify({
+          tone: 'warning',
+          title: 'Ledger facts not saved to database',
+          message: 'Facts are visible for this session only. Run the continuity ledger migrations and approve the memory again.'
+        });
+      }
+      if (versionPersistenceFailed) {
+        notify({
+          tone: 'warning',
+          title: 'Profile versions not saved to database',
+          message: 'The memory was approved, but profile version history could not be persisted.'
+        });
+      }
       setPendingMemoryUpdate(null);
     } catch (err) {
       console.error('Failed to approve memory:', err);

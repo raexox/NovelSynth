@@ -457,6 +457,131 @@
   font-size: 11.5px;
 }
 
+.bible-ledger-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.bible-ledger-header svg {
+  color: var(--accent-purple);
+}
+
+.ledger-filter-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+}
+
+.ledger-filter-btn {
+  min-width: 0;
+  padding: 5px 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+  color: var(--text-muted);
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: capitalize;
+  cursor: pointer;
+}
+
+.ledger-filter-btn.active {
+  border-color: var(--accent-purple);
+  color: var(--text-primary);
+  background: var(--accent-purple-dim);
+}
+
+.ledger-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.ledger-empty {
+  padding: 10px;
+  border: 1px dashed var(--border-color);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+  text-align: center;
+}
+
+.ledger-card {
+  padding: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-primary);
+}
+
+.ledger-card-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.ledger-card-body {
+  margin-top: 5px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ledger-status {
+  flex-shrink: 0;
+  padding: 1px 5px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 9px;
+  text-transform: capitalize;
+}
+
+.ledger-status-active {
+  border-color: var(--color-success);
+  color: var(--color-success);
+  background: var(--color-success-bg);
+}
+
+.ledger-status-superseded,
+.ledger-status-resolved {
+  border-color: var(--accent-gold);
+  color: var(--accent-gold);
+  background: var(--accent-gold-dim);
+}
+
+.ledger-status-contradicted {
+  border-color: var(--color-danger);
+  color: var(--color-danger);
+  background: var(--color-danger-bg);
+}
+
+.ledger-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 7px;
+  padding: 3px 5px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 10.5px;
+  cursor: pointer;
+}
+
+.ledger-source-btn:hover {
+  color: var(--text-primary);
+  border-color: var(--accent-purple);
+}
+
 @media (max-width: 420px) {
   .bible-editor .form-row {
     grid-template-columns: 1fr;

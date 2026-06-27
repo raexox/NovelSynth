@@ -2,7 +2,8 @@ import { useEffect, useCallback } from 'react';
 import type { User } from '@supabase/supabase-js';
 import { supabase } from '../../services/supabaseClient';
 import type { 
-  ProjectState, Chapter, Scene, PlotThread, Note, MemoryUpdate, VersionSnapshot 
+  ProjectState, Chapter, Scene, PlotThread, Note, MemoryUpdate, VersionSnapshot,
+  ContinuityFact, BibleItemVersion
 } from '../../types';
 import { DEFAULT_THEME, isThemeId } from '../../theme/themes';
 import { notify } from '../../services/notifications';
@@ -119,6 +120,24 @@ export const useBooks = (
 
       if (memoryError) throw memoryError;
 
+      const { data: continuityData, error: continuityError } = await supabase
+        .from('continuity_facts')
+        .select('id, book_id, scene_id, chapter_id, entity_type, entity_id, entity_name, fact_type, fact_text, status, starts_at_scene_id, ends_at_scene_id, source, created_at')
+        .eq('book_id', bookId);
+
+      if (continuityError) {
+        console.warn('Continuity ledger unavailable; run the continuity ledger migration to persist book-aware facts.', continuityError);
+      }
+
+      const { data: bibleVersionData, error: bibleVersionError } = await supabase
+        .from('bible_item_versions')
+        .select('id, book_id, bible_item_id, category, name, data, source_scene_id, reason, created_at')
+        .eq('book_id', bookId);
+
+      if (bibleVersionError) {
+        console.warn('Bible item versions unavailable; run the continuity ledger migration to persist profile versions.', bibleVersionError);
+      }
+
       const { data: snapshotData, error: snapshotError } = await supabase
         .from('snapshots')
         .select('id, scene_id, timestamp, description, content')
@@ -202,6 +221,7 @@ export const useBooks = (
         summary: r.summary,
         events: r.events || [],
         newFacts: r.new_facts || [],
+        proposedFacts: [],
         revealedInfo: r.revealed_info || [],
         unresolvedQuestions: r.unresolved_questions || [],
         emotionalChanges: r.emotional_changes || [],
@@ -209,6 +229,35 @@ export const useBooks = (
         timelineUpdates: r.timeline_updates || [],
         locationUpdates: r.location_updates || [],
         status: r.status as any
+      }));
+
+      const continuityFacts: ContinuityFact[] = (continuityData || []).map((r: any) => ({
+        id: r.id,
+        bookId: r.book_id,
+        sceneId: r.scene_id || '',
+        chapterId: r.chapter_id || '',
+        entityType: r.entity_type,
+        entityId: r.entity_id,
+        entityName: r.entity_name || '',
+        factType: r.fact_type || '',
+        factText: r.fact_text || '',
+        status: r.status,
+        startsAtSceneId: r.starts_at_scene_id || r.scene_id || '',
+        endsAtSceneId: r.ends_at_scene_id,
+        source: r.source,
+        createdAt: r.created_at || new Date().toISOString()
+      }));
+
+      const bibleItemVersions: BibleItemVersion[] = (bibleVersionData || []).map((r: any) => ({
+        id: r.id,
+        bookId: r.book_id,
+        bibleItemId: r.bible_item_id,
+        category: r.category,
+        name: r.name || '',
+        data: r.data || {},
+        sourceSceneId: r.source_scene_id,
+        reason: r.reason || '',
+        createdAt: r.created_at || new Date().toISOString()
       }));
 
       const snapshots: VersionSnapshot[] = (snapshotData || []).map((r: any) => ({
@@ -244,6 +293,8 @@ export const useBooks = (
         plotThreads,
         notes,
         memoryUpdates,
+        continuityFacts,
+        bibleItemVersions,
         snapshots,
         settings: mergedSettings as any
       };
@@ -329,6 +380,8 @@ export const useBooks = (
       snapshots: [],
       notes: [],
       memoryUpdates: [],
+      continuityFacts: [],
+      bibleItemVersions: [],
       settings: {
         apiKey: '',
         model: 'gemini-1.5-flash',
@@ -401,6 +454,14 @@ export const useBooks = (
 
     try {
       await supabase.from('snapshots').delete().eq('book_id', activeBookId);
+      await supabase.from('bible_item_versions').delete().eq('book_id', activeBookId).then(
+        () => {},
+        (err: any) => console.warn('Bible item version cleanup skipped:', err)
+      );
+      await supabase.from('continuity_facts').delete().eq('book_id', activeBookId).then(
+        () => {},
+        (err: any) => console.warn('Continuity fact cleanup skipped:', err)
+      );
       await supabase.from('memory_updates').delete().eq('book_id', activeBookId);
       await supabase.from('notes').delete().eq('book_id', activeBookId);
       await supabase.from('plot_threads').delete().eq('book_id', activeBookId);

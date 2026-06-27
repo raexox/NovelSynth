@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import type { Character, Location, Faction, PowerSystem } from '../../types';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Clock, Database, GitBranch } from 'lucide-react';
 
 export const BibleItemEditor: React.FC = () => {
   const {
@@ -9,15 +9,56 @@ export const BibleItemEditor: React.FC = () => {
     activeBibleCategory,
     activeBibleItemId,
     setBibleItemId,
-    updateBibleItem
+    updateBibleItem,
+    createBibleItemVersion,
+    loadBibleItemVersions,
+    selectScene
   } = useStore();
+  const [factFilter, setFactFilter] = useState<'active' | 'superseded' | 'all'>('active');
 
   const item = project.storyBible[activeBibleCategory].find((i: any) => i.id === activeBibleItemId);
   const textValue = (value: unknown) => typeof value === 'string' ? value : '';
+  const initialItemRef = useRef<any | null>(null);
+  const storyBibleRef = useRef(project.storyBible);
+
+  storyBibleRef.current = project.storyBible;
+
+  useEffect(() => {
+    if (!item || !activeBibleItemId) return;
+
+    initialItemRef.current = JSON.parse(JSON.stringify(item));
+
+    return () => {
+      const initialItem = initialItemRef.current;
+      const currentItem = (storyBibleRef.current[activeBibleCategory] as any[]).find(i => i.id === activeBibleItemId);
+      if (!initialItem || !currentItem || initialItem.id !== activeBibleItemId) return;
+
+      const initialSerialized = JSON.stringify(initialItem);
+      const currentSerialized = JSON.stringify(currentItem);
+      if (initialSerialized === currentSerialized) return;
+
+      const { id: _id, name, ...data } = initialItem;
+      createBibleItemVersion({
+        bookId: undefined,
+        bibleItemId: activeBibleItemId,
+        category: activeBibleCategory,
+        name,
+        data,
+        sourceSceneId: null,
+        reason: 'Manual Story Bible edit'
+      });
+    };
+  }, [activeBibleCategory, activeBibleItemId]);
 
   if (!item) {
     return <div style={{ fontSize: 12, padding: 12 }}>Item not found.</div>;
   }
+
+  const itemVersions = loadBibleItemVersions(item.id);
+  const itemFacts = project.continuityFacts
+    .filter(fact => fact.entityId === item.id || fact.entityName.toLowerCase() === item.name.toLowerCase())
+    .filter(fact => factFilter === 'all' ? true : fact.status === factFilter)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
   return (
     <div className="bible-editor">
@@ -238,6 +279,90 @@ export const BibleItemEditor: React.FC = () => {
             </div>
           </>
         )}
+      </div>
+
+      <div className="bible-editor-fields">
+        <div className="bible-ledger-header">
+          <div>
+            <div className="sidebar-mini-title">Continuity Ledger</div>
+            <div className="sidebar-mini-meta">Canon facts connected to this Bible item.</div>
+          </div>
+          <Database size={14} />
+        </div>
+        <div className="ledger-filter-row">
+          {(['active', 'superseded', 'all'] as const).map(filter => (
+            <button
+              key={filter}
+              type="button"
+              className={`ledger-filter-btn ${factFilter === filter ? 'active' : ''}`}
+              onClick={() => setFactFilter(filter)}
+            >
+              {filter}
+            </button>
+          ))}
+        </div>
+        <div className="ledger-list">
+          {itemFacts.length === 0 && (
+            <div className="ledger-empty">No {factFilter === 'all' ? '' : factFilter} ledger facts for this item yet.</div>
+          )}
+          {itemFacts.map(fact => {
+            const sourceScene = project.scenes.find(scene => scene.id === fact.sceneId);
+            return (
+              <div key={fact.id} className="ledger-card">
+                <div className="ledger-card-title">
+                  <span>{fact.factType || fact.entityType}</span>
+                  <span className={`ledger-status ledger-status-${fact.status}`}>{fact.status}</span>
+                </div>
+                <div className="ledger-card-body">{fact.factText}</div>
+                {sourceScene && (
+                  <button
+                    type="button"
+                    className="ledger-source-btn"
+                    onClick={() => selectScene(sourceScene.id)}
+                  >
+                    <Clock size={11} />
+                    {sourceScene.title}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      <div className="bible-editor-fields">
+        <div className="bible-ledger-header">
+          <div>
+            <div className="sidebar-mini-title">Profile Versions</div>
+            <div className="sidebar-mini-meta">Snapshots captured when this profile changes.</div>
+          </div>
+          <GitBranch size={14} />
+        </div>
+        <div className="ledger-list">
+          {itemVersions.length === 0 && (
+            <div className="ledger-empty">No profile versions recorded yet.</div>
+          )}
+          {itemVersions.map(version => {
+            const sourceScene = version.sourceSceneId ? project.scenes.find(scene => scene.id === version.sourceSceneId) : null;
+            return (
+              <div key={version.id} className="ledger-card">
+                <div className="ledger-card-title">
+                  <span>{version.reason || 'Profile version'}</span>
+                  <span>{new Date(version.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="ledger-card-body">
+                  Saved previous version of {version.name || item.name}.
+                </div>
+                {sourceScene && (
+                  <button type="button" className="ledger-source-btn" onClick={() => selectScene(sourceScene.id)}>
+                    <Clock size={11} />
+                    {sourceScene.title}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

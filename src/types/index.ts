@@ -86,6 +86,49 @@ export interface StoryBible {
   powerSystems: PowerSystem[];
 }
 
+export type BibleCategory = 'characters' | 'locations' | 'factions' | 'powerSystems';
+export type ContinuityEntityType = 'character' | 'location' | 'faction' | 'powerSystem' | 'object' | 'timeline' | 'relationship';
+export type ContinuityFactStatus = 'active' | 'superseded' | 'resolved' | 'contradicted';
+export type ContinuityFactSource = 'memory' | 'bible_edit';
+
+export interface ContinuityFact {
+  id: string;
+  bookId?: string;
+  sceneId: string;
+  chapterId: string;
+  entityType: ContinuityEntityType;
+  entityId?: string | null;
+  entityName: string;
+  factType: string;
+  factText: string;
+  status: ContinuityFactStatus;
+  startsAtSceneId: string;
+  endsAtSceneId?: string | null;
+  source: ContinuityFactSource;
+  createdAt: string;
+}
+
+export interface ProposedContinuityFact {
+  entityType: ContinuityEntityType;
+  entityId?: string | null;
+  entityName: string;
+  factType: string;
+  factText: string;
+  status?: ContinuityFactStatus;
+}
+
+export interface BibleItemVersion {
+  id: string;
+  bookId?: string;
+  bibleItemId: string;
+  category: BibleCategory;
+  name: string;
+  data: Record<string, any>;
+  sourceSceneId?: string | null;
+  reason: string;
+  createdAt: string;
+}
+
 // Plot Threads
 export interface PlotThread {
   id: string;
@@ -121,6 +164,7 @@ export interface MemoryUpdate {
   summary: string;
   events: string[];
   newFacts: string[];
+  proposedFacts?: ProposedContinuityFact[];
   revealedInfo: string[];
   unresolvedQuestions: string[];
   emotionalChanges: string[];
@@ -140,6 +184,8 @@ export interface ProjectState {
   snapshots: VersionSnapshot[];
   notes: Note[];
   memoryUpdates: MemoryUpdate[];
+  continuityFacts: ContinuityFact[];
+  bibleItemVersions: BibleItemVersion[];
   settings: {
     apiKey: string;
     model: string;
