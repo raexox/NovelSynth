@@ -196,10 +196,10 @@ export const useManuscript = (
       const order = chapterScenes.length + 1;
       
       const defaultMetadata = {
-        pov: project.storyBible.characters[0]?.name || "Author",
-        date: new Date().toISOString().split('T')[0],
-        time: "12:00",
-        location: project.storyBible.locations[0]?.name || "Default Location",
+        pov: project.storyBible.characters[0]?.name || "",
+        date: "",
+        time: "",
+        location: project.storyBible.locations[0]?.name || "",
         characters: []
       };
 
