@@ -243,6 +243,27 @@ export const SceneInspector: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Scene Outline & Beats Summary */}
+      <div style={{ marginTop: 8, paddingTop: 8, borderTop: '1px dashed var(--border-color)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        <div style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--accent-purple)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+          Scene Plot Beats
+        </div>
+        {activeScene.outline?.beats && activeScene.outline.beats.length > 0 ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {activeScene.outline.beats.map((b, i) => (
+              <div key={b.id} style={{ fontSize: 11, color: b.completed ? 'var(--text-muted)' : 'var(--text-primary)', textDecoration: b.completed ? 'line-through' : 'none', display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                <span style={{ fontSize: 10, color: 'var(--text-muted)', fontWeight: 600 }}>{i+1}.</span>
+                <span>{b.text}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            No plot beats defined. Switch to Outline Studio to add beats.
+          </div>
+        )}
+      </div>
     </div>
   );
 };

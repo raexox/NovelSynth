@@ -8,6 +8,20 @@ export interface SceneMetadata {
   characters: string[];
 }
 
+export interface PlotBeat {
+  id: string;
+  text: string;
+  completed: boolean;
+}
+
+export interface SceneOutline {
+  summary: string;
+  goal?: string;
+  conflict?: string;
+  outcome?: string;
+  beats: PlotBeat[];
+}
+
 export interface Scene {
   id: string;
   chapterId: string;
@@ -18,6 +32,7 @@ export interface Scene {
   wordCount: number;
   lastSaved: string;
   metadata: SceneMetadata;
+  outline?: SceneOutline;
 }
 
 export interface Chapter {

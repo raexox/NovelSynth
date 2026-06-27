@@ -16,6 +16,8 @@ export interface StoreContextType {
   activeSceneId: string | null;
   activeLeftTab: string;
   activeRightTab: string;
+  viewMode: 'editor' | 'outline';
+  setViewMode: (mode: 'editor' | 'outline') => void;
   isLeftSidebarOpen: boolean;
   isRightSidebarOpen: boolean;
   activeBibleCategory: 'characters' | 'locations' | 'factions' | 'powerSystems';
@@ -79,6 +81,11 @@ export interface StoreContextType {
   deleteScene: (id: string) => void;
   deleteChapter: (id: string) => void;
   updateSceneMetadata: (id: string, metadata: Partial<SceneMetadata>) => void;
+  updateSceneOutline: (id: string, outlineUpdates: Partial<import('../types').SceneOutline>) => void;
+  addPlotBeat: (sceneId: string, beatText: string) => void;
+  togglePlotBeat: (sceneId: string, beatId: string) => void;
+  deletePlotBeat: (sceneId: string, beatId: string) => void;
+  expandSceneBeatsWithAI: (sceneId: string) => Promise<void>;
   setLeftTab: (tab: string) => void;
   setRightTab: (tab: string) => void;
   toggleLeftSidebar: () => void;

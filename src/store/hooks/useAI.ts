@@ -8,7 +8,8 @@ import {
   getAIPacingAnalysis, 
   getAIResearch, 
   getAIMemoryGeneration,
-  getAIChatResponse 
+  getAIChatResponse,
+  getAISceneBeats
 } from '../../services/aiService';
 import type { ContinuityFact, BibleItemVersion, ProjectState, MemoryUpdate, ProposedContinuityFact } from '../../types';
 import { notify } from '../../services/notifications';
@@ -690,6 +691,60 @@ export const useAI = (
     });
   };
 
+  const expandSceneBeatsWithAI = async (sceneId: string) => {
+    const scene = project.scenes.find(s => s.id === sceneId);
+    if (!scene) return;
+
+    setAiRunning(true);
+    setAiError(null);
+    try {
+      const existingBeats = scene.outline?.beats?.map(b => b.text) || [];
+      const generatedBeats = await getAISceneBeats(scene.title, scene.outline?.summary || '', existingBeats, project);
+      
+      if (generatedBeats.length > 0) {
+        const newBeatObjects = generatedBeats.map(bText => ({
+          id: 'beat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+          text: bText,
+          completed: false
+        }));
+
+        setProject(prev => {
+          const updatedScenes = prev.scenes.map(s => {
+            if (s.id === sceneId) {
+              const currentOutline = s.outline || { summary: '', beats: [] };
+              return {
+                ...s,
+                outline: {
+                  ...currentOutline,
+                  beats: [...currentOutline.beats, ...newBeatObjects]
+                }
+              };
+            }
+            return s;
+          });
+          return { ...prev, scenes: updatedScenes };
+        });
+
+        notify({
+          tone: 'success',
+          title: 'Beats expanded',
+          message: `AI generated ${generatedBeats.length} new plot beats for "${scene.title}".`
+        });
+      } else {
+        notify({
+          tone: 'info',
+          title: 'No new beats',
+          message: 'AI did not generate extra beats.'
+        });
+      }
+    } catch (err: any) {
+      console.error('Failed to generate beats with AI:', err);
+      setAiError(err.message || 'Error expanding beats with AI');
+    } finally {
+      setAiRunning(false);
+    }
+  };
+
   return {
     continuityRunning,
     dialogueRunning,
@@ -711,6 +766,7 @@ export const useAI = (
     approveMemory,
     rejectMemory,
     updateMemoryUpdate,
-    updateChapterMemory
+    updateChapterMemory,
+    expandSceneBeatsWithAI
   };
 };

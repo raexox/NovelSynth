@@ -3,6 +3,7 @@ import { HashRouter as Router, Routes, Route, Navigate, useNavigate, useParams }
 import { StoreProvider, useStore } from './store';
 import { LeftSidebar } from './components/left-sidebar/LeftSidebar';
 import { Editor } from './components/Editor';
+import { OutlineStudio } from './components/outline/OutlineStudio';
 import { RightSidebar } from './components/right-sidebar/RightSidebar';
 import { ToastHost } from './components/ToastHost';
 import { ReferenceLibraryModal } from './components/reference-library/ReferenceLibraryModal';
@@ -10,7 +11,7 @@ import { isSupabaseConfigured } from './services/supabaseClient';
 import { notify } from './services/notifications';
 import { 
   Sparkles, Search, History, Settings, Download, Upload, 
-  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle, Trash2, Image as ImageIcon
+  Menu, X, BookOpen, LogOut, Plus, ChevronRight, Lock, Mail, Key, AlertTriangle, Trash2, Image as ImageIcon, Layers
 } from 'lucide-react';
 import { DEFAULT_THEME, THEME_OPTIONS, type ThemeId, isThemeId } from './theme/themes';
 
@@ -494,6 +495,8 @@ const WorkspaceShell: React.FC = () => {
     deleteBook,
     activeLeftTab,
     setLeftTab,
+    viewMode,
+    setViewMode,
     updateBookDetails,
     updateUserSettings
   } = useStore();
@@ -653,6 +656,28 @@ const WorkspaceShell: React.FC = () => {
           </span>
           <ChevronRight size={12} style={{ color: 'var(--text-muted)' }} />
           <div className="brand-title">{project.projectName}</div>
+
+          <div style={{ height: 16, width: 1, backgroundColor: 'var(--border-color)', margin: '0 8px' }}></div>
+
+          {/* Workspace Mode Switcher Pills */}
+          <div className="view-mode-pill-toggle">
+            <button
+              type="button"
+              className={`view-mode-pill-btn ${viewMode === 'editor' ? 'active' : ''}`}
+              onClick={() => setViewMode('editor')}
+            >
+              <BookOpen size={13} />
+              <span>Editor</span>
+            </button>
+            <button
+              type="button"
+              className={`view-mode-pill-btn ${viewMode === 'outline' ? 'active' : ''}`}
+              onClick={() => setViewMode('outline')}
+            >
+              <Layers size={13} />
+              <span>Outline Studio</span>
+            </button>
+          </div>
         </div>
 
         <div className="header-controls">
@@ -744,8 +769,12 @@ const WorkspaceShell: React.FC = () => {
           <LeftSidebar />
         </div>
 
-        {/* Central Writing Canvas */}
-        <Editor />
+        {/* Central Writing Canvas / Outline Studio */}
+        {viewMode === 'outline' ? (
+          <OutlineStudio />
+        ) : (
+          <Editor />
+        )}
 
         {/* Right AI Assistant Panel */}
         <div className={`sidebar right-sidebar ${isRightSidebarOpen ? '' : 'collapsed'}`}>

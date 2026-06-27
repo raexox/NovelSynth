@@ -463,7 +463,14 @@ export async function getAIChatResponse(
         .sort((a, b) => a.order - b.order)
         .map((s, sIdx) => {
           const isActive = s.id === activeSceneId ? ' [CURRENT ACTIVE SCENE IN EDITOR]' : '';
-          return `   - Scene ${sIdx + 1}: "${s.title}" (ID: ${s.id})${isActive}`;
+          let sceneOutlineDetails = '';
+          if (s.outline) {
+            if (s.outline.summary) sceneOutlineDetails += `\n     Summary: ${s.outline.summary}`;
+            if (s.outline.beats && s.outline.beats.length > 0) {
+              sceneOutlineDetails += `\n     Beats: ${s.outline.beats.map(b => b.text).join(' -> ')}`;
+            }
+          }
+          return `   - Scene ${sIdx + 1}: "${s.title}" (ID: ${s.id})${isActive}${sceneOutlineDetails}`;
         })
         .join('\n');
       return `Chapter ${cIdx + 1}: "${chap.title}"\n${chapScenes || '   (No scenes)'}`;
@@ -589,5 +596,42 @@ Return a JSON object with:
     keyFindings: Array.isArray(result.keyFindings) ? result.keyFindings : [],
     targetSceneId: result.targetSceneId || undefined
   };
+}
+
+export async function getAISceneBeats(
+  sceneTitle: string,
+  sceneSummary: string,
+  existingBeats: string[],
+  project: ProjectState
+): Promise<string[]> {
+  const settings = project.settings;
+  const characters = (project.storyBible.characters || []).map(c => `${c.name} (${c.role || 'character'})`).join(', ');
+  const locations = (project.storyBible.locations || []).map(l => l.name).join(', ');
+
+  const systemInstruction = `You are a developmental editor and story architect assisting an author with plotting.
+Your goal is to take a high-level scene outline or rough summary and generate 3-5 vivid, sequential plot beats/events that bridge the scene together.
+
+Worldbuilding context:
+- Characters: ${characters || 'None specified'}
+- Key Locations: ${locations || 'None specified'}
+
+Output format:
+Return a JSON object:
+{
+  "beats": [
+    "Short action beat 1",
+    "Short action beat 2",
+    "Short action beat 3"
+  ]
+}`;
+
+  const prompt = `Scene Title: "${sceneTitle}"
+Rough Summary / Concept: "${sceneSummary || 'Main events of the scene'}"
+Existing Beats (if any): ${existingBeats.length > 0 ? existingBeats.join('; ') : 'None'}
+
+Please generate 3-5 intermediate plot beats to make this scene engaging, structured, and clear.`;
+
+  const result = await callLLM(prompt, settings, systemInstruction);
+  return Array.isArray(result.beats) ? result.beats : [];
 }
 

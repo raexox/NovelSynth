@@ -62,6 +62,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activeSceneId, setActiveSceneId] = useState<string | null>(null);
   const [activeLeftTab, setActiveLeftTab] = useState<string>('novel');
   const [activeRightTab, setActiveRightTab] = useState<string>('revision');
+  const [viewMode, setViewMode] = useState<'editor' | 'outline'>('editor');
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'powerSystems'>('characters');
@@ -209,7 +210,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     approveMemory,
     rejectMemory,
     updateMemoryUpdate,
-    updateChapterMemory
+    updateChapterMemory,
+    expandSceneBeatsWithAI
   } = useAI(
     activeBookId,
     activeSceneId,
@@ -247,7 +249,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     addScene,
     deleteScene,
     deleteChapter,
-    updateSceneMetadata
+    updateSceneMetadata,
+    updateSceneOutline,
+    addPlotBeat,
+    togglePlotBeat,
+    deletePlotBeat
   } = useManuscript(
     activeBookId,
     activeSceneId,
@@ -337,6 +343,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       activeSceneId,
       activeLeftTab,
       activeRightTab,
+      viewMode,
+      setViewMode,
       isLeftSidebarOpen,
       isRightSidebarOpen,
       activeBibleCategory,
@@ -397,6 +405,11 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       deleteScene,
       deleteChapter,
       updateSceneMetadata,
+      updateSceneOutline,
+      addPlotBeat,
+      togglePlotBeat,
+      deletePlotBeat,
+      expandSceneBeatsWithAI,
       setLeftTab,
       setRightTab,
       toggleLeftSidebar,

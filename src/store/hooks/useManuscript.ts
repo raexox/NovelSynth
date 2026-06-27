@@ -213,6 +213,7 @@ export const useManuscript = (
           order_index: order,
           status: 'draft',
           metadata: defaultMetadata,
+          outline: { summary: '', beats: [] },
           word_count: 5
         })
         .select()
@@ -229,7 +230,8 @@ export const useManuscript = (
         status: data.status as any,
         wordCount: data.word_count,
         lastSaved: data.updated_at || data.created_at || new Date().toISOString(),
-        metadata: data.metadata as any
+        metadata: data.metadata as any,
+        outline: data.outline || { summary: '', beats: [] }
       };
 
       setProject(prev => ({
@@ -318,6 +320,65 @@ export const useManuscript = (
     }
   };
 
+  const updateSceneOutline = async (id: string, outlineUpdates: Partial<import('../../types').SceneOutline>) => {
+    const currentScene = project.scenes.find(s => s.id === id);
+    if (!currentScene) return;
+
+    const currentOutline = currentScene.outline || { summary: '', beats: [] };
+    const mergedOutline = { ...currentOutline, ...outlineUpdates };
+
+    setProject(prev => ({
+      ...prev,
+      scenes: prev.scenes.map(s => s.id === id ? { ...s, outline: mergedOutline } : s)
+    }));
+
+    try {
+      await supabase
+        .from('scenes')
+        .update({ outline: mergedOutline })
+        .eq('id', id);
+    } catch (err) {
+      console.warn('Could not persist outline column to DB, kept in local state.', err);
+    }
+  };
+
+  const addPlotBeat = (sceneId: string, beatText: string) => {
+    if (!beatText.trim()) return;
+    const currentScene = project.scenes.find(s => s.id === sceneId);
+    if (!currentScene) return;
+
+    const currentOutline = currentScene.outline || { summary: '', beats: [] };
+    const newBeat = {
+      id: 'beat-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
+      text: beatText.trim(),
+      completed: false
+    };
+
+    updateSceneOutline(sceneId, {
+      beats: [...currentOutline.beats, newBeat]
+    });
+  };
+
+  const togglePlotBeat = (sceneId: string, beatId: string) => {
+    const currentScene = project.scenes.find(s => s.id === sceneId);
+    if (!currentScene || !currentScene.outline) return;
+
+    const updatedBeats = currentScene.outline.beats.map(b => 
+      b.id === beatId ? { ...b, completed: !b.completed } : b
+    );
+
+    updateSceneOutline(sceneId, { beats: updatedBeats });
+  };
+
+  const deletePlotBeat = (sceneId: string, beatId: string) => {
+    const currentScene = project.scenes.find(s => s.id === sceneId);
+    if (!currentScene || !currentScene.outline) return;
+
+    const updatedBeats = currentScene.outline.beats.filter(b => b.id !== beatId);
+
+    updateSceneOutline(sceneId, { beats: updatedBeats });
+  };
+
   return {
     selectScene,
     updateSceneContent,
@@ -327,6 +388,10 @@ export const useManuscript = (
     addScene,
     deleteScene,
     deleteChapter,
-    updateSceneMetadata
+    updateSceneMetadata,
+    updateSceneOutline,
+    addPlotBeat,
+    togglePlotBeat,
+    deletePlotBeat
   };
 };

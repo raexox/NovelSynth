@@ -86,7 +86,7 @@ export const useBooks = (
 
       const { data: scenesData, error: scenesError } = await supabase
         .from('scenes')
-        .select('id, chapter_id, title, content, order_index, status, word_count, metadata, updated_at, created_at')
+        .select('id, chapter_id, title, content, order_index, status, word_count, metadata, outline, updated_at, created_at')
         .eq('book_id', bookId)
         .order('order_index', { ascending: true });
 
@@ -178,7 +178,8 @@ export const useBooks = (
           status: r.status as any,
           wordCount,
           lastSaved: shouldUseCachedDraft ? cachedDraft.savedAt : remoteSavedAt,
-          metadata: r.metadata as any
+          metadata: r.metadata as any,
+          outline: r.outline || { summary: '', beats: [] }
         };
       });
 
