@@ -2,6 +2,7 @@ import { useRef, useEffect } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import type { ProjectState, Chapter, Scene, SceneMetadata } from '../../types';
 import { cacheSceneDraft, clearSceneDraft } from '../sceneDraftCache';
+import { notify } from '../../services/notifications';
 
 /**
  * Custom hook managing NovelSynth chapters and scenes.
@@ -55,20 +56,27 @@ export const useManuscript = (
 
     sceneTimeoutRef.current[id] = setTimeout(async () => {
       const wordCount = content.split(/\s+/).filter(Boolean).length;
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('scenes')
         .update({
           content,
           word_count: wordCount,
           updated_at: new Date().toISOString()
         })
-        .eq('id', id);
+        .eq('id', id)
+        .select('id')
+        .single();
 
-      if (!error) {
+      if (!error && data?.id) {
         clearSceneDraft(id);
         delete sceneTimeoutRef.current[id];
       } else {
-        console.error('Failed to save scene content:', error);
+        console.error('Failed to save scene content:', error || 'No scene row was updated.');
+        notify({
+          tone: 'warning',
+          title: 'Draft not saved to database',
+          message: 'Your text is kept locally for now. Check scene table permissions/RLS before refreshing.'
+        });
       }
     }, 1000);
   };
@@ -96,12 +104,14 @@ export const useManuscript = (
       mergedScene.lastSaved = new Date().toISOString();
       dbUpdates.updated_at = mergedScene.lastSaved;
 
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('scenes')
         .update(dbUpdates)
-        .eq('id', id);
+        .eq('id', id)
+        .select('id')
+        .single();
 
-      if (error) throw error;
+      if (error || !data?.id) throw error || new Error('No scene row was updated.');
 
       if (updates.content !== undefined) {
         clearSceneDraft(id);

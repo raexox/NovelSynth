@@ -582,9 +582,219 @@
   border-color: var(--accent-purple);
 }
 
+.draft-review-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(5px);
+}
+
+.draft-review-modal {
+  width: min(980px, 94vw);
+  height: min(760px, 88vh);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-color-focus);
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.55);
+  overflow: hidden;
+}
+
+.draft-review-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: linear-gradient(90deg, var(--bg-tertiary), var(--accent-purple-dim));
+}
+
+.draft-review-title-block {
+  min-width: 0;
+}
+
+.draft-review-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.draft-review-title svg {
+  color: var(--accent-purple);
+}
+
+.draft-review-meta {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.draft-review-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.draft-review-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-primary);
+}
+
+.draft-review-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.draft-review-tab.active {
+  border-color: var(--accent-purple);
+  background: var(--accent-purple-dim);
+  color: var(--text-primary);
+}
+
+.draft-review-body {
+  flex: 1;
+  min-height: 0;
+  padding: 12px;
+  overflow: hidden;
+}
+
+.draft-review-pane {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.draft-review-pane-label {
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.draft-review-text {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+}
+
+.draft-review-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.draft-diff-delete,
+.draft-diff-insert {
+  padding: 1px 2px;
+  border-radius: 3px;
+}
+
+.draft-diff-delete {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  text-decoration: line-through;
+}
+
+.draft-diff-insert {
+  background: var(--color-success-bg);
+  color: hsl(140, 80%, 75%);
+}
+
+.draft-review-muted {
+  color: var(--text-muted);
+}
+
+.draft-restore-confirm {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-top: 1px solid color-mix(in srgb, var(--color-danger) 40%, var(--border-color));
+  background: color-mix(in srgb, var(--bg-tertiary) 86%, var(--color-danger));
+}
+
+.draft-restore-confirm svg {
+  color: var(--color-danger);
+}
+
+.draft-restore-confirm strong,
+.draft-restore-confirm span {
+  display: block;
+}
+
+.draft-restore-confirm strong {
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.draft-restore-confirm span {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
 @media (max-width: 420px) {
   .bible-editor .form-row {
     grid-template-columns: 1fr;
+  }
+
+  .draft-review-overlay {
+    padding: 10px;
+  }
+
+  .draft-review-modal {
+    width: 100vw;
+    height: 94vh;
+  }
+
+  .draft-review-header,
+  .draft-restore-confirm {
+    grid-template-columns: 1fr;
+  }
+
+  .draft-restore-confirm {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
   }
 }
 
