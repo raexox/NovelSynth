@@ -4,7 +4,7 @@ interface TextHighlightOverlayProps {
   content: string;
   selectedText: string;
   selectionRange: { start: number; end: number } | null;
-  overlayRef: React.RefObject<HTMLDivElement>;
+  overlayRef: React.RefObject<HTMLDivElement | null>;
 }
 
 export const TextHighlightOverlay: React.FC<TextHighlightOverlayProps> = ({

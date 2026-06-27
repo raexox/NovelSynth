@@ -3,6 +3,7 @@ import type {
   ProjectState, SceneMetadata, PlotThread, Note, MemoryUpdate, Chapter, Scene,
   ContinuityFact, BibleItemVersion, ProposedContinuityFact, BibleCategory
 } from '../types';
+import type { ChatConversation } from '../types/chatTypes';
 
 /**
  * Global state store context representing the entire state and actions of NovelSynth.
@@ -43,12 +44,17 @@ export interface StoreContextType {
   clearAIError: () => void;
 
   // Chat States & Actions
+  conversations: ChatConversation[];
+  activeConversationId: string | null;
   chatMessages: Array<{ role: 'user' | 'model'; content: string }>;
   selectedText: string;
   setSelectedText: (text: string) => void;
   sendChatMessage: (content: string) => Promise<void>;
   replaceSelectedText: (newText: string) => void;
   clearChat: () => void;
+  createNewConversation: () => void;
+  selectConversation: (id: string) => void;
+  deleteConversation: (id: string) => void;
 
   // Auth & Book Actions
   signUp: (email: string, password: string) => Promise<any>;

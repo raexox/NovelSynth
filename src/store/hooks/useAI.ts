@@ -89,6 +89,9 @@ const inferProposedFactsFromMemory = (
  * Computes active contexts dynamically based on active scene POV character, location, and power systems.
  * Connects with `aiService` relays.
  */
+import type { ChatConversation } from '../../types/chatTypes';
+import { chatDatabaseService } from '../../services/chatDatabaseService';
+
 export const useAI = (
   activeBookId: string | null,
   activeSceneId: string | null,
@@ -103,6 +106,10 @@ export const useAI = (
   setResearchResults: React.Dispatch<React.SetStateAction<string | null>>,
   pendingMemoryUpdate: MemoryUpdate | null,
   setPendingMemoryUpdate: React.Dispatch<React.SetStateAction<MemoryUpdate | null>>,
+  conversations: ChatConversation[],
+  setConversations: React.Dispatch<React.SetStateAction<ChatConversation[]>>,
+  activeConversationId: string | null,
+  setActiveConversationId: React.Dispatch<React.SetStateAction<string | null>>,
   chatMessages: Array<{ role: 'user' | 'model'; content: string }>,
   setChatMessages: React.Dispatch<React.SetStateAction<Array<{ role: 'user' | 'model'; content: string }>>>,
   selectedText: string,
@@ -160,13 +167,68 @@ export const useAI = (
   };
 
   // Chat Actions
+  const createNewConversation = () => {
+    setActiveConversationId(null);
+    setChatMessages([]);
+    setSelectedText('');
+  };
+
+  const selectConversation = (id: string) => {
+    const conv = conversations.find(c => c.id === id);
+    if (conv) {
+      setActiveConversationId(id);
+      setChatMessages(conv.messages);
+    }
+  };
+
+  const deleteConversation = (id: string) => {
+    const updated = conversations.filter(c => c.id !== id);
+    setConversations(updated);
+    chatDatabaseService.deleteConversation(id);
+    if (activeConversationId === id) {
+      createNewConversation();
+    }
+  };
+
   const sendChatMessage = async (content: string) => {
     if (!content.trim()) return;
     
-    const updatedMessages = [...chatMessages, { role: 'user' as const, content }];
+    const userMsg = { role: 'user' as const, content };
+    const updatedMessages = [...chatMessages, userMsg];
     setChatMessages(updatedMessages);
     setAiRunning(true);
     setAiError(null);
+
+    let currentConvId = activeConversationId;
+    let updatedConversations = [...conversations];
+    let activeConvObj: ChatConversation;
+
+    if (!currentConvId) {
+      currentConvId = `conv_${Date.now()}`;
+      const title = content.length > 28 ? content.slice(0, 28) + '...' : content;
+      activeConvObj = {
+        id: currentConvId,
+        title,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        messages: updatedMessages
+      };
+      updatedConversations.unshift(activeConvObj);
+      setActiveConversationId(currentConvId);
+    } else {
+      activeConvObj = {
+        id: currentConvId,
+        title: conversations.find(c => c.id === currentConvId)?.title || 'Conversation',
+        createdAt: conversations.find(c => c.id === currentConvId)?.createdAt || Date.now(),
+        updatedAt: Date.now(),
+        messages: updatedMessages
+      };
+      updatedConversations = updatedConversations.map(c => 
+        c.id === currentConvId ? activeConvObj : c
+      );
+    }
+    setConversations(updatedConversations);
+    chatDatabaseService.saveConversation(activeBookId, activeConvObj);
 
     try {
       const scene = project.scenes.find(s => s.id === activeSceneId);
@@ -176,10 +238,24 @@ export const useAI = (
         updatedMessages,
         sceneContent,
         selectedText,
-        project.settings
+        project.settings,
+        project
       );
 
-      setChatMessages([...updatedMessages, { role: 'model' as const, content: aiResponse }]);
+      const finalMessages = [...updatedMessages, { role: 'model' as const, content: aiResponse }];
+      setChatMessages(finalMessages);
+
+      const finalConvObj: ChatConversation = {
+        ...activeConvObj,
+        updatedAt: Date.now(),
+        messages: finalMessages
+      };
+
+      const finalConversations = updatedConversations.map(c => 
+        c.id === currentConvId ? finalConvObj : c
+      );
+      setConversations(finalConversations);
+      chatDatabaseService.saveConversation(activeBookId, finalConvObj);
     } catch (err: any) {
       setAiError(err.message || 'Failed to get response from AI writer agent.');
     } finally {
@@ -207,8 +283,7 @@ export const useAI = (
   };
 
   const clearChat = () => {
-    setChatMessages([]);
-    setSelectedText('');
+    createNewConversation();
   };
 
   // AI Service Integrations
@@ -592,6 +667,9 @@ export const useAI = (
     sendChatMessage,
     replaceSelectedText,
     clearChat,
+    createNewConversation,
+    selectConversation,
+    deleteConversation,
     runAIRevision,
     runAIContinuityCheck,
     runAIDialogueCheck,

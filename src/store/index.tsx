@@ -17,6 +17,8 @@ import { usePlotAndNotes } from './hooks/usePlotAndNotes';
 import { useSnapshots } from './hooks/useSnapshots';
 import { useImportExport } from './hooks/useImportExport';
 import { useAI } from './hooks/useAI';
+import type { ChatConversation } from '../types/chatTypes';
+import { chatDatabaseService } from '../services/chatDatabaseService';
 import { DEFAULT_THEME } from '../theme/themes';
 
 const EMPTY_PROJECT_STATE: ProjectState = {
@@ -140,8 +142,30 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   }, [activeSceneId, sceneDiagnosticsCache]);
 
   // Chat States
+  const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<Array<{ role: 'user' | 'model'; content: string }>>([]);
   const [selectedText, setSelectedText] = useState<string>('');
+
+  // Fetch AI conversations from database whenever active book changes
+  useEffect(() => {
+    if (!activeBookId) {
+      setConversations([]);
+      setActiveConversationId(null);
+      setChatMessages([]);
+      return;
+    }
+    chatDatabaseService.fetchConversations(activeBookId).then(fetchedConvs => {
+      setConversations(fetchedConvs);
+      if (fetchedConvs.length > 0) {
+        setActiveConversationId(fetchedConvs[0].id);
+        setChatMessages(fetchedConvs[0].messages);
+      } else {
+        setActiveConversationId(null);
+        setChatMessages([]);
+      }
+    });
+  }, [activeBookId]);
 
   // 1. Auth Hook
   const { signUp, signIn, signOut, updateUserSettings: persistUserSettings } = useAuth(
@@ -169,6 +193,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     sendChatMessage,
     replaceSelectedText,
     clearChat,
+    createNewConversation,
+    selectConversation,
+    deleteConversation,
     runAIRevision,
     runAIContinuityCheck,
     runAIDialogueCheck,
@@ -193,6 +220,10 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setResearchResults,
     pendingMemoryUpdate,
     setPendingMemoryUpdate,
+    conversations,
+    setConversations,
+    activeConversationId,
+    setActiveConversationId,
     chatMessages,
     setChatMessages,
     selectedText,
@@ -327,12 +358,17 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       aiError,
       clearAIError,
 
+      conversations,
+      activeConversationId,
       chatMessages,
       selectedText,
       setSelectedText,
       sendChatMessage,
       replaceSelectedText,
       clearChat,
+      createNewConversation,
+      selectConversation,
+      deleteConversation,
 
       signUp,
       signIn,

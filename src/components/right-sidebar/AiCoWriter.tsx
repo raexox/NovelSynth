@@ -1,27 +1,34 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight } from 'lucide-react';
+import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus } from 'lucide-react';
 import { ProseRevisionCard } from './ProseRevisionCard';
+import { ChatHistoryDrawer } from './ChatHistoryDrawer';
 import { notify } from '../../services/notifications';
 
 export const AiCoWriter: React.FC = () => {
   const {
     aiRunning,
     revisionSuggestions,
+    conversations,
+    activeConversationId,
     chatMessages,
     selectedText,
     setSelectedText,
     sendChatMessage,
     replaceSelectedText,
-    clearChat,
+    createNewConversation,
+    selectConversation,
+    deleteConversation,
     runAIRevision
   } = useStore();
 
   const [revisionMode, setRevisionMode] = useState<'light' | 'style' | 'line' | 'dev'>('line');
   const [chatInput, setChatInput] = useState('');
   const [showRevisionTool, setShowRevisionTool] = useState(false);
+  const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const activeConv = conversations.find(c => c.id === activeConversationId);
 
   // Auto-scroll chat to bottom
   useEffect(() => {
@@ -49,7 +56,50 @@ export const AiCoWriter: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 10 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0, gap: 10, position: 'relative' }}>
+      {/* Chat History Slide-over Drawer */}
+      <ChatHistoryDrawer
+        isOpen={showHistoryDrawer}
+        onClose={() => setShowHistoryDrawer(false)}
+        conversations={conversations}
+        activeConversationId={activeConversationId}
+        onSelectConversation={selectConversation}
+        onNewConversation={createNewConversation}
+        onDeleteConversation={(id, e) => {
+          e.stopPropagation();
+          deleteConversation(id);
+        }}
+      />
+
+      {/* Top Chat Session Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 6, padding: '6px 10px', flexShrink: 0 }}>
+        <button
+          type="button"
+          className="btn"
+          onClick={() => setShowHistoryDrawer(true)}
+          style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 6, backgroundColor: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border-color)' }}
+          title="View Past Conversations"
+        >
+          <History size={13} style={{ color: 'var(--accent-purple)' }} />
+          <span style={{ maxWidth: 120, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {activeConv ? activeConv.title : 'Chat History'}
+          </span>
+          <span style={{ fontSize: 9.5, backgroundColor: 'var(--accent-purple-dim)', color: 'var(--accent-purple)', padding: '1px 5px', borderRadius: 10, fontWeight: 700 }}>
+            {conversations.length}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          className="btn btn-secondary"
+          onClick={createNewConversation}
+          style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+          title="Start New Chat"
+        >
+          <Plus size={13} />
+          <span>New Chat</span>
+        </button>
+      </div>
       {/* Revision Suggestions Diff view */}
       {revisionSuggestions && <ProseRevisionCard revisionMode={revisionMode} />}
 
@@ -255,9 +305,9 @@ export const AiCoWriter: React.FC = () => {
           type="button" 
           className="btn btn-secondary" 
           style={{ width: '100%', padding: '2px', fontSize: 9.5, color: 'var(--text-muted)', border: 'none', background: 'none' }} 
-          onClick={clearChat}
+          onClick={createNewConversation}
         >
-          Clear Conversation History
+          Start New Conversation Thread
         </button>
       )}
     </div>
