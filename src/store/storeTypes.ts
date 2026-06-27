@@ -19,6 +19,9 @@ export interface StoreContextType {
   isRightSidebarOpen: boolean;
   activeBibleCategory: 'characters' | 'locations' | 'factions' | 'powerSystems';
   activeBibleItemId: string | null;
+  isReferenceModalOpen: boolean;
+  openReferenceModal: (tab?: string) => void;
+  closeReferenceModal: () => void;
   
   // Auth & Hierarchy States
   user: User | null;

@@ -64,6 +64,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
   const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'powerSystems'>('characters');
   const [activeBibleItemId, setBibleItemId] = useState<string | null>(null);
+  const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
 
   // Auth & Book Hierarchy States
   const [user, setUser] = useState<User | null>(null);
@@ -275,6 +276,18 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setActiveBibleCategory(cat);
     setBibleItemId(null);
   };
+  const openReferenceModal = (tab?: string) => {
+    if (tab) {
+      if (tab === 'characters' || tab === 'locations' || tab === 'factions' || tab === 'powerSystems') {
+        setActiveLeftTab('bible');
+        setActiveBibleCategory(tab as any);
+      } else {
+        setActiveLeftTab(tab);
+      }
+    }
+    setIsReferenceModalOpen(true);
+  };
+  const closeReferenceModal = () => setIsReferenceModalOpen(false);
   const loadBibleItemVersions = (itemId: string) => {
     return project.bibleItemVersions
       .filter(version => version.bibleItemId === itemId)
@@ -291,6 +304,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isRightSidebarOpen,
       activeBibleCategory,
       activeBibleItemId,
+      isReferenceModalOpen,
+      openReferenceModal,
+      closeReferenceModal,
       
       user,
       authLoading,

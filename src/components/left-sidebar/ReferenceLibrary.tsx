@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus, Database
+  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus, Database, Maximize2
 } from 'lucide-react';
 import { BibleItemEditor } from './BibleItemEditor';
 import { PlotThreadsTracker } from './PlotThreadsTracker';
@@ -22,7 +22,8 @@ export const ReferenceLibrary: React.FC = () => {
     setBibleCategory,
     setBibleItemId,
     addBibleItem,
-    deleteBibleItem
+    deleteBibleItem,
+    openReferenceModal
   } = useStore();
 
   const categories = [
@@ -54,6 +55,17 @@ export const ReferenceLibrary: React.FC = () => {
 
   return (
     <div className="reference-library">
+      {/* Full Workspace Command Center Banner */}
+      <button 
+        type="button" 
+        className="ref-expand-banner-btn"
+        onClick={() => openReferenceModal()}
+        title="Open spacious full-screen Worldbuilding Command Center"
+      >
+        <Maximize2 size={13} />
+        <span>Expand Command Center</span>
+      </button>
+
       {/* Category pills grid */}
       <div className="reference-category-grid">
         {categories.map(cat => {

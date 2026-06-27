@@ -5,6 +5,7 @@ import { LeftSidebar } from './components/left-sidebar/LeftSidebar';
 import { Editor } from './components/Editor';
 import { RightSidebar } from './components/right-sidebar/RightSidebar';
 import { ToastHost } from './components/ToastHost';
+import { ReferenceLibraryModal } from './components/reference-library/ReferenceLibraryModal';
 import { isSupabaseConfigured } from './services/supabaseClient';
 import { notify } from './services/notifications';
 import { 
@@ -751,6 +752,9 @@ const WorkspaceShell: React.FC = () => {
           <RightSidebar />
         </div>
       </main>
+
+      {/* Worldbuilding & Continuity Engine Modal */}
+      <ReferenceLibraryModal />
 
       {/* Settings Modal (Glassmorphic) */}
       {showSettings && (
