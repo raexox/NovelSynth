@@ -71,7 +71,7 @@ export const LeftSidebar: React.FC = () => {
 
   const timelineErrors = getTimelineErrors();
   const isManuscriptTab = activeLeftTab === 'novel' || activeLeftTab === 'history';
-  const isReferenceTab = activeLeftTab === 'bible' || activeLeftTab === 'plots' || activeLeftTab === 'notes' || activeLeftTab === 'search';
+  const isReferenceTab = activeLeftTab === 'bible' || activeLeftTab === 'canon' || activeLeftTab === 'plots' || activeLeftTab === 'notes' || activeLeftTab === 'search';
 
   return (
     <div className="sidebar-container">
@@ -90,7 +90,7 @@ export const LeftSidebar: React.FC = () => {
             type="button"
             className={`sidebar-tab-pill-btn ${isReferenceTab ? 'active' : ''}`}
             onClick={() => {
-              if (activeLeftTab !== 'bible' && activeLeftTab !== 'plots' && activeLeftTab !== 'notes' && activeLeftTab !== 'search') {
+              if (activeLeftTab !== 'bible' && activeLeftTab !== 'canon' && activeLeftTab !== 'plots' && activeLeftTab !== 'notes' && activeLeftTab !== 'search') {
                 setLeftTab('bible');
               }
             }}

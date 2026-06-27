@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus
+  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus, Database
 } from 'lucide-react';
 import { BibleItemEditor } from './BibleItemEditor';
 import { PlotThreadsTracker } from './PlotThreadsTracker';
 import { ScrapbookNotes } from './ScrapbookNotes';
 import { IntelligentSearch } from './IntelligentSearch';
+import { CanonLedger } from './CanonLedger';
 
 type BibleCategory = 'characters' | 'locations' | 'factions' | 'powerSystems';
 
@@ -29,6 +30,7 @@ export const ReferenceLibrary: React.FC = () => {
     { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible' },
     { id: 'factions', label: 'Factions', icon: Users, tab: 'bible' },
     { id: 'powerSystems', label: 'Magic', icon: Sparkles, tab: 'bible' },
+    { id: 'canon', label: 'Canon', icon: Database, tab: 'canon' },
     { id: 'plots', label: 'Plots', icon: GitCommit, tab: 'plots' },
     { id: 'notes', label: 'Notes', icon: FileText, tab: 'notes' },
     { id: 'search', label: 'Search', icon: Search, tab: 'search' }
@@ -58,6 +60,7 @@ export const ReferenceLibrary: React.FC = () => {
           const isActive = (cat.tab === 'bible' && activeLeftTab === 'bible' && activeBibleCategory === cat.id) ||
                            (cat.tab === 'plots' && activeLeftTab === 'plots') ||
                            (cat.tab === 'notes' && activeLeftTab === 'notes') ||
+                           (cat.tab === 'canon' && activeLeftTab === 'canon') ||
                            (cat.tab === 'search' && activeLeftTab === 'search');
           const Icon = cat.icon;
 
@@ -168,6 +171,9 @@ export const ReferenceLibrary: React.FC = () => {
             )}
           </div>
         )}
+
+        {/* === CANON TAB === */}
+        {activeLeftTab === 'canon' && <CanonLedger />}
 
         {/* === PLOTS TAB === */}
         {activeLeftTab === 'plots' && <PlotThreadsTracker />}

@@ -226,6 +226,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     deleteBibleItem,
     addContinuityFact,
     updateContinuityFact,
+    deleteContinuityFact,
     createBibleItemVersion
   } = useStoryBible(
     activeBookId,
@@ -346,6 +347,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       deleteBibleItem,
       addContinuityFact,
       updateContinuityFact,
+      deleteContinuityFact,
       createBibleItemVersion,
       loadBibleItemVersions,
       addPlotThread,

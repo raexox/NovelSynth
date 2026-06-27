@@ -78,6 +78,7 @@ export interface StoreContextType {
   deleteBibleItem: (category: BibleCategory, id: string) => void;
   addContinuityFact: (fact: Omit<ContinuityFact, 'id' | 'createdAt'>) => Promise<ContinuityFact | null>;
   updateContinuityFact: (id: string, updates: Partial<ContinuityFact>) => Promise<void>;
+  deleteContinuityFact: (id: string) => Promise<void>;
   createBibleItemVersion: (version: Omit<BibleItemVersion, 'id' | 'createdAt'>) => Promise<BibleItemVersion | null>;
   loadBibleItemVersions: (itemId: string) => BibleItemVersion[];
   addPlotThread: (thread: Partial<PlotThread>) => void;

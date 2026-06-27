@@ -169,10 +169,17 @@ export const useStoryBible = (
   const updateContinuityFact = async (id: string, updates: Partial<ContinuityFact>) => {
     try {
       const dbUpdates: any = {};
+      if (updates.sceneId !== undefined) dbUpdates.scene_id = updates.sceneId || null;
+      if (updates.chapterId !== undefined) dbUpdates.chapter_id = updates.chapterId || null;
+      if (updates.entityType !== undefined) dbUpdates.entity_type = updates.entityType;
+      if (updates.entityId !== undefined) dbUpdates.entity_id = updates.entityId || null;
+      if (updates.entityName !== undefined) dbUpdates.entity_name = updates.entityName;
       if (updates.factText !== undefined) dbUpdates.fact_text = updates.factText;
       if (updates.factType !== undefined) dbUpdates.fact_type = updates.factType;
       if (updates.status !== undefined) dbUpdates.status = updates.status;
+      if (updates.startsAtSceneId !== undefined) dbUpdates.starts_at_scene_id = updates.startsAtSceneId || null;
       if (updates.endsAtSceneId !== undefined) dbUpdates.ends_at_scene_id = updates.endsAtSceneId || null;
+      if (updates.source !== undefined) dbUpdates.source = updates.source;
 
       if (!id.startsWith('local-fact-')) {
         const { error } = await supabase
@@ -189,6 +196,26 @@ export const useStoryBible = (
       }));
     } catch (err) {
       console.error('Failed to update continuity fact:', err);
+    }
+  };
+
+  const deleteContinuityFact = async (id: string) => {
+    try {
+      if (!id.startsWith('local-fact-')) {
+        const { error } = await supabase
+          .from('continuity_facts')
+          .delete()
+          .eq('id', id);
+
+        if (error) throw error;
+      }
+
+      setProject(prev => ({
+        ...prev,
+        continuityFacts: prev.continuityFacts.filter(fact => fact.id !== id)
+      }));
+    } catch (err) {
+      console.error('Failed to delete continuity fact:', err);
     }
   };
 
@@ -262,6 +289,7 @@ export const useStoryBible = (
     deleteBibleItem,
     addContinuityFact,
     updateContinuityFact,
+    deleteContinuityFact,
     createBibleItemVersion,
     loadBibleItemVersions
   };
