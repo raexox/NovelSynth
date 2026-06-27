@@ -28,6 +28,7 @@ export const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => 
   const [chatInput, setChatInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const activeConv = conversations.find(c => c.id === activeConversationId);
 
@@ -51,10 +52,21 @@ export const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => 
     }
   }, [chatMessages, isOpen]);
 
+  // Auto-expand textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+    }
+  }, [chatInput]);
+
   if (!isOpen) return null;
 
   const handleChatSubmit = () => {
     if (!chatInput.trim() || aiRunning) return;
+    if (isListening) {
+      toggleListening(chatInput);
+    }
     sendChatMessage(chatInput.trim());
     setChatInput('');
   };
@@ -437,28 +449,42 @@ export const AiChatModal: React.FC<AiChatModalProps> = ({ isOpen, onClose }) => 
                 width: '100%',
                 backgroundColor: '#111827',
                 border: isListening ? '1px solid var(--accent-purple)' : '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: 28,
-                padding: '6px 8px 6px 18px',
+                borderRadius: 20,
+                padding: '8px 12px 8px 18px',
                 display: 'flex',
-                alignItems: 'center',
+                alignItems: 'flex-end',
                 gap: 10,
                 boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)'
               }}
             >
-              <input 
-                type="text"
+              <textarea 
+                ref={textareaRef}
                 placeholder={isListening ? "Listening with AssemblyAI... speak now..." : "Ask anything..."}
                 value={chatInput}
                 onChange={e => setChatInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleChatSubmit(); }}
+                onKeyDown={e => { 
+                  if (e.key === 'Enter' && !e.shiftKey) { 
+                    e.preventDefault(); 
+                    handleChatSubmit(); 
+                  } 
+                }}
                 disabled={aiRunning}
+                rows={1}
                 style={{
                   flex: 1,
                   background: 'none',
                   border: 'none',
                   outline: 'none',
                   color: '#f8fafc',
-                  fontSize: 14
+                  fontSize: 14,
+                  resize: 'none',
+                  minHeight: 24,
+                  maxHeight: 140,
+                  overflowY: 'auto',
+                  lineHeight: 1.4,
+                  fontFamily: 'inherit',
+                  padding: 0,
+                  margin: 0
                 }}
               />
 

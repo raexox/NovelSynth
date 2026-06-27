@@ -29,6 +29,7 @@ export const AiCoWriter: React.FC = () => {
   const [showExpandModal, setShowExpandModal] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const baseTextRef = useRef('');
   const activeConv = conversations.find(c => c.id === activeConversationId);
 
@@ -54,8 +55,19 @@ export const AiCoWriter: React.FC = () => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [chatMessages]);
 
+  // Auto-expand textarea based on content
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 140)}px`;
+    }
+  }, [chatInput]);
+
   const handleChatSubmit = () => {
-    if (!chatInput.trim()) return;
+    if (!chatInput.trim() || aiRunning) return;
+    if (isListening) {
+      toggleListening(chatInput);
+    }
     sendChatMessage(chatInput.trim());
     setChatInput('');
   };
@@ -284,19 +296,30 @@ export const AiCoWriter: React.FC = () => {
       </div>
 
       {/* Chat Send Controls */}
-      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-        <input 
-          type="text" 
-          className="form-input" 
-          placeholder={isListening ? "Listening... speak now..." : "Type brainstorming prompt..."}
+      <div style={{ display: 'flex', gap: 6, flexShrink: 0, alignItems: 'flex-end' }}>
+        <textarea 
+          ref={textareaRef}
+          className="form-textarea" 
+          placeholder={isListening ? "Listening with AssemblyAI... speak now..." : "Type brainstorming prompt..."}
           value={chatInput}
           onChange={e => setChatInput(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') handleChatSubmit(); }}
+          onKeyDown={e => { 
+            if (e.key === 'Enter' && !e.shiftKey) { 
+              e.preventDefault(); 
+              handleChatSubmit(); 
+            } 
+          }}
           disabled={aiRunning}
+          rows={1}
           style={{ 
             fontSize: 12, 
             padding: '6px 10px',
-            borderColor: isListening ? 'var(--accent-purple)' : undefined
+            borderColor: isListening ? 'var(--accent-purple)' : undefined,
+            resize: 'none',
+            minHeight: 32,
+            maxHeight: 140,
+            overflowY: 'auto',
+            lineHeight: 1.4
           }}
         />
         <button 
