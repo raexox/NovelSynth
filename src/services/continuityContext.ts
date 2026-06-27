@@ -72,6 +72,28 @@ export const buildBookContextForScene = (project: ProjectState, scene: Scene): B
     return `- ${sourceScene?.title || 'Recent scene'}: ${memory.summary}`;
   });
 
+  // Extract immediate preceding prose hand-off (last 350 words of active scene content)
+  const words = (scene.content || '').split(/\s+/).filter(Boolean);
+  const recentWords = words.slice(-350).join(' ');
+  const proseHandOff = recentWords.length > 0 ? `=== IMMEDIATE PRECEDING PROSE (MATCH TONE & VOICE) ===\n"""\n... ${recentWords}\n"""` : '';
+
+  // Smart Entity Spotlighting: prioritize active POV, location, and scene characters
+  const activePov = (scene.metadata?.pov || '').toLowerCase();
+  const activeLoc = (scene.metadata?.location || '').toLowerCase();
+  const activeChars = (scene.metadata?.characters || []).map(c => c.toLowerCase());
+
+  const spotlightedCharacters = project.storyBible.characters.filter(c => 
+    c.name.toLowerCase() === activePov || activeChars.includes(c.name.toLowerCase())
+  );
+  const spotlightedLocations = project.storyBible.locations.filter(l => 
+    l.name.toLowerCase() === activeLoc
+  );
+
+  const bibleSpotlightLines = [
+    ...spotlightedCharacters.map(c => `- [Character Profile: ${c.name}] Role: ${c.role || 'N/A'}. Personality: ${c.personality || 'N/A'}. Goals: ${c.goals || 'N/A'}. Speech: ${c.speechStyle || 'N/A'}`),
+    ...spotlightedLocations.map(l => `- [Location Profile: ${l.name}] Description: ${l.description || 'N/A'}. Weather/Atmosphere: ${l.weather || 'N/A'}`)
+  ];
+
   return {
     facts,
     memories,
@@ -80,12 +102,12 @@ export const buildBookContextForScene = (project: ProjectState, scene: Scene): B
     memoriesCount: memories.length,
     recentMemoryCount: recentMemories.length,
     summary: [
-      `Context mode: Book-aware hierarchical canon.`,
-      `Active continuity facts included: ${facts.length}.`,
-      `Prior chapter recaps: ${priorChapterMemories.length}, recent scene memories: ${recentMemories.length}.`,
-      factLines.length ? `Continuity facts:\n${factLines.join('\n')}` : 'Continuity facts: none approved yet.',
-      chapterRecapLines.length ? `Prior Chapter High-Level Recaps:\n${chapterRecapLines.join('\n')}` : '',
-      memoryLines.length ? `Recent Scene Memories:\n${memoryLines.join('\n')}` : 'Prior memory summaries: none approved yet.'
+      `Context mode: Optimized Book-Aware Hierarchical Engine.`,
+      proseHandOff,
+      bibleSpotlightLines.length ? `=== ACTIVE SCENE BIBLE SPOTLIGHT ===\n${bibleSpotlightLines.join('\n')}` : '',
+      factLines.length ? `=== ACTIVE CONTINUITY FACTS (${facts.length}) ===\n${factLines.join('\n')}` : 'Continuity facts: none active yet.',
+      chapterRecapLines.length ? `=== PRIOR CHAPTER RECAPS ===\n${chapterRecapLines.join('\n')}` : '',
+      memoryLines.length ? `=== RECENT SCENE MEMORIES ===\n${memoryLines.join('\n')}` : 'Prior memory summaries: none approved yet.'
     ].filter(Boolean).join('\n\n')
   };
 };

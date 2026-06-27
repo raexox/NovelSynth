@@ -457,16 +457,25 @@ export async function getAIChatResponse(
   let contextBlock = '';
 
   if (project) {
+    // Extract immediate preceding prose hand-off (last 300 words of active scene content)
+    const sceneWords = (sceneContent || '').split(/\s+/).filter(Boolean);
+    const recentProseSnippet = sceneWords.length > 0 
+      ? `\n\n1b. IMMEDIATE PRECEDING PROSE (MATCH VOICE & RHYTHM):\n"""\n... ${sceneWords.slice(-300).join(' ')}\n"""` 
+      : '';
+
+    // Smart Windowing: Full detailed beats for scenes in active chapter; concise summaries for distant chapters
     const outlineStructure = (project.chapters || []).map((chap, cIdx) => {
+      const isCurrentChap = chap.id === activeChapter?.id;
       const chapScenes = (project.scenes || [])
         .filter(s => s.chapterId === chap.id)
         .sort((a, b) => a.order - b.order)
         .map((s, sIdx) => {
-          const isActive = s.id === activeSceneId ? ' [CURRENT ACTIVE SCENE IN EDITOR]' : '';
+          const isActive = s.id === activeSceneId ? ' [ACTIVE SCENE]' : '';
           let sceneOutlineDetails = '';
           if (s.outline) {
             if (s.outline.summary) sceneOutlineDetails += `\n     Summary: ${s.outline.summary}`;
-            if (s.outline.beats && s.outline.beats.length > 0) {
+            // Include full beats for scenes in the current chapter to avoid prompt bloat while giving rich local context
+            if (isCurrentChap && s.outline.beats && s.outline.beats.length > 0) {
               sceneOutlineDetails += `\n     Beats: ${s.outline.beats.map(b => b.text).join(' -> ')}`;
             }
           }
@@ -498,14 +507,14 @@ export async function getAIChatResponse(
       ? `- ACTIVE HIGHLIGHTED SELECTION (Author selected this text for editing/focus):\n"""\n${selectedText}\n"""\n\n` 
       : '';
 
-    contextBlock = `=== FULL PROJECT CONTEXT ===
+    contextBlock = `=== OPTIMIZED PROJECT CONTEXT ===
 
 ${focusHeader}1. CURRENT ACTIVE SCENE MANUSCRIPT (${activeSceneHeader}):
 """
 ${sceneContent || '(Empty scene content)'}
-"""
+"""${recentProseSnippet}
 
-2. MANUSCRIPT OUTLINE STRUCTURE:
+2. MANUSCRIPT OUTLINE STRUCTURE (WINDOWED):
 ${outlineStructure || '(No outline available)'}
 
 3. CONTINUITY LEDGER FACTS:
