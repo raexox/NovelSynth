@@ -189,6 +189,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   const {
+    continuityRunning,
+    dialogueRunning,
+    pacingRunning,
     clearAISuggestions,
     sendChatMessage,
     replaceSelectedText,
@@ -200,6 +203,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     runAIContinuityCheck,
     runAIDialogueCheck,
     runPacingAnalysis,
+    runAllDiagnostics,
     runResearch,
     triggerMemoryGeneration,
     approveMemory,
@@ -348,6 +352,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       booksLoading,
 
       aiRunning,
+      continuityRunning,
+      dialogueRunning,
+      pacingRunning,
       revisionSuggestions,
       continuityWarnings,
       dialogueWarnings,
@@ -414,6 +421,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       runAIContinuityCheck,
       runAIDialogueCheck,
       runPacingAnalysis,
+      runAllDiagnostics,
       runResearch,
       approveMemory,
       rejectMemory,

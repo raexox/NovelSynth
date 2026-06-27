@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '../../services/supabaseClient';
 import { buildBookContextForScene, findBibleItemByEntity } from '../../services/continuityContext';
 import { 
@@ -117,6 +117,10 @@ export const useAI = (
   setActiveContexts: React.Dispatch<React.SetStateAction<string[]>>,
   updateSceneContent: (id: string, content: string) => void
 ) => {
+  const [continuityRunning, setContinuityRunning] = useState(false);
+  const [dialogueRunning, setDialogueRunning] = useState(false);
+  const [pacingRunning, setPacingRunning] = useState(false);
+
   // Load Active Contexts based on characters and locations mentioned in active scene
   useEffect(() => {
     if (!activeSceneId) {
@@ -316,6 +320,7 @@ export const useAI = (
     if (!scene) return;
 
     setAiRunning(true);
+    setContinuityRunning(true);
     setContinuityWarnings(null);
     setAiError(null);
 
@@ -336,6 +341,7 @@ export const useAI = (
     } catch (err: any) {
       setAiError(err.message || 'Failed to run continuity check.');
     } finally {
+      setContinuityRunning(false);
       setAiRunning(false);
     }
   };
@@ -346,6 +352,7 @@ export const useAI = (
     if (!scene) return;
 
     setAiRunning(true);
+    setDialogueRunning(true);
     setDialogueWarnings(null);
     setAiError(null);
 
@@ -366,6 +373,7 @@ export const useAI = (
     } catch (err: any) {
       setAiError(err.message || 'Failed to run dialogue voice check.');
     } finally {
+      setDialogueRunning(false);
       setAiRunning(false);
     }
   };
@@ -376,6 +384,7 @@ export const useAI = (
     if (!scene) return;
 
     setAiRunning(true);
+    setPacingRunning(true);
     setPacingSuggestions(null);
     setAiError(null);
 
@@ -385,8 +394,26 @@ export const useAI = (
     } catch (err: any) {
       setAiError(err.message || 'Failed to analyze pacing.');
     } finally {
+      setPacingRunning(false);
       setAiRunning(false);
     }
+  };
+
+  const runAllDiagnostics = async () => {
+    if (!activeSceneId) return;
+    const scene = project.scenes.find(s => s.id === activeSceneId);
+    if (!scene) return;
+
+    setAiRunning(true);
+    setAiError(null);
+
+    await Promise.allSettled([
+      runAIContinuityCheck(),
+      runAIDialogueCheck(),
+      runPacingAnalysis()
+    ]);
+
+    setAiRunning(false);
   };
 
   const runResearch = async (query: string) => {
@@ -664,6 +691,9 @@ export const useAI = (
   };
 
   return {
+    continuityRunning,
+    dialogueRunning,
+    pacingRunning,
     clearAISuggestions,
     sendChatMessage,
     replaceSelectedText,
@@ -675,6 +705,7 @@ export const useAI = (
     runAIContinuityCheck,
     runAIDialogueCheck,
     runPacingAnalysis,
+    runAllDiagnostics,
     runResearch,
     triggerMemoryGeneration,
     approveMemory,

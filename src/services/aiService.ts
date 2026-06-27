@@ -245,13 +245,24 @@ export async function getAIContinuityCheck(
   bookContext?: BookContextForScene
 ): Promise<Array<{ title: string; content: string; severity: 'low' | 'medium' | 'high' }>> {
 
+  const trimmedChars = (bible.characters || []).map(c => ({
+    name: c.name,
+    role: c.role,
+    traits: c.traits,
+    appearance: c.appearance,
+    personality: c.personality
+  }));
+  const trimmedLocs = (bible.locations || []).map(l => ({ name: l.name, description: l.description }));
+  const trimmedFactions = (bible.factions || []).map(f => ({ name: f.name, description: f.description }));
+  const trimmedSystems = (bible.powerSystems || []).map(p => ({ name: p.name, rules: (p as any).rules || (p as any).description }));
+
   const systemInstruction = `You are a developmental novel editor and continuity manager. Your task is to audit the active scene draft against the Story Bible details and scene metadata to find any contradictions, timeline errors, character ability clashing, appearance discrepancies, setting/technology clashes, or location mismatches.
 
 Story Bible details provided:
-Characters: ${JSON.stringify(bible.characters)}
-Locations: ${JSON.stringify(bible.locations)}
-Factions: ${JSON.stringify(bible.factions)}
-Power/Magic Systems: ${JSON.stringify(bible.powerSystems)}
+Characters: ${JSON.stringify(trimmedChars)}
+Locations: ${JSON.stringify(trimmedLocs)}
+Factions: ${JSON.stringify(trimmedFactions)}
+Power/Magic Systems: ${JSON.stringify(trimmedSystems)}
 
 Active Scene Metadata:
 POV: ${metadata.pov}
@@ -291,10 +302,18 @@ export async function getAIDialogueCheck(
   bookContext?: BookContextForScene
 ): Promise<Array<{ title: string; quote: string; content: string }>> {
 
+  const trimmedChars = (bible.characters || []).map(c => ({
+    name: c.name,
+    role: c.role,
+    traits: c.traits,
+    personality: c.personality,
+    speechPatterns: (c as any).speechPatterns || (c as any).speechStyle
+  }));
+
   const systemInstruction = `You are a novel editor and dialogue coach. Audits character dialogue in the scene draft to ensure it aligns with their personality, relationships, speaking style, vocabulary, and emotional states described in the Story Bible.
 
 Story Bible character profiles:
-${JSON.stringify(bible.characters)}
+${JSON.stringify(trimmedChars)}
 
 Book-aware past canon context:
 ${bookContext?.summary || 'No approved prior book context available.'}

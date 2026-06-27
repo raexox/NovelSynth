@@ -10,12 +10,13 @@ export const ProseDiagnostics: React.FC = () => {
     project,
     activeSceneId,
     aiRunning,
+    continuityRunning,
+    dialogueRunning,
+    pacingRunning,
     continuityWarnings,
     dialogueWarnings,
     pacingSuggestions,
-    runAIContinuityCheck,
-    runAIDialogueCheck,
-    runPacingAnalysis
+    runAllDiagnostics
   } = useStore();
 
   const [continuityExpanded, setContinuityExpanded] = useState(true);
@@ -26,9 +27,7 @@ export const ProseDiagnostics: React.FC = () => {
   const bookContext = activeScene ? buildBookContextForScene(project, activeScene) : null;
 
   const handleRunAllDiagnostics = async () => {
-    await runAIContinuityCheck();
-    await runAIDialogueCheck();
-    await runPacingAnalysis();
+    await runAllDiagnostics();
   };
 
   return (
@@ -110,7 +109,9 @@ export const ProseDiagnostics: React.FC = () => {
             {continuityExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span>NARRATIVE CONTINUITY</span>
           </div>
-          {continuityWarnings && (
+          {continuityRunning ? (
+            <Loader2 size={12} className="animate-spin" style={{ color: 'var(--accent-purple)' }} />
+          ) : continuityWarnings ? (
             <span className="badge" style={{
               fontSize: 9,
               padding: '1px 5px',
@@ -121,12 +122,16 @@ export const ProseDiagnostics: React.FC = () => {
             }}>
               {continuityWarnings.length === 1 && continuityWarnings[0].title === 'No Major Inconsistencies Found' ? 'Clear' : continuityWarnings.length}
             </span>
-          )}
+          ) : null}
         </div>
 
         {continuityExpanded && (
           <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {continuityWarnings ? (
+            {continuityRunning ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)', padding: '6px 0' }}>
+                <Loader2 size={12} className="animate-spin" /> Checking narrative continuity...
+              </div>
+            ) : continuityWarnings ? (
               continuityWarnings.map((warn, index) => (
                 <div 
                   key={index} 
@@ -166,7 +171,9 @@ export const ProseDiagnostics: React.FC = () => {
             {voiceExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span>DIALOGUE & CHARACTER VOICE</span>
           </div>
-          {dialogueWarnings && (
+          {dialogueRunning ? (
+            <Loader2 size={12} className="animate-spin" style={{ color: 'var(--accent-purple)' }} />
+          ) : dialogueWarnings ? (
             <span className="badge" style={{
               fontSize: 9,
               padding: '1px 5px',
@@ -177,12 +184,16 @@ export const ProseDiagnostics: React.FC = () => {
             }}>
               {dialogueWarnings.length}
             </span>
-          )}
+          ) : null}
         </div>
 
         {voiceExpanded && (
           <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {dialogueWarnings ? (
+            {dialogueRunning ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)', padding: '6px 0' }}>
+                <Loader2 size={12} className="animate-spin" /> Auditing dialogue & voice consistency...
+              </div>
+            ) : dialogueWarnings ? (
               dialogueWarnings.map((warn, index) => (
                 <div key={index} className="continuity-warning" style={{ margin: 0, padding: 8, borderLeftColor: 'var(--accent-purple)', backgroundColor: 'var(--bg-primary)' }}>
                   <div className="continuity-warning-title" style={{ color: 'var(--accent-purple)', fontSize: 11 }}>
@@ -215,7 +226,9 @@ export const ProseDiagnostics: React.FC = () => {
             {pacingExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
             <span>STRUCTURE & PACING</span>
           </div>
-          {pacingSuggestions && (
+          {pacingRunning ? (
+            <Loader2 size={12} className="animate-spin" style={{ color: 'var(--accent-purple)' }} />
+          ) : pacingSuggestions ? (
             <span className="badge" style={{
               fontSize: 9,
               padding: '1px 5px',
@@ -226,12 +239,16 @@ export const ProseDiagnostics: React.FC = () => {
             }}>
               {pacingSuggestions.length}
             </span>
-          )}
+          ) : null}
         </div>
 
         {pacingExpanded && (
           <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {pacingSuggestions ? (
+            {pacingRunning ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, color: 'var(--text-muted)', padding: '6px 0' }}>
+                <Loader2 size={12} className="animate-spin" /> Analyzing structure & pacing balance...
+              </div>
+            ) : pacingSuggestions ? (
               pacingSuggestions.map((sug, index) => (
                 <div key={index} style={{ padding: 8, backgroundColor: 'var(--bg-primary)', borderRadius: 4, border: '1px solid var(--border-color)', fontSize: 11, lineHeight: 1.4 }}>
                   {sug}

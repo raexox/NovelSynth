@@ -33,6 +33,9 @@ export interface StoreContextType {
   
   // AI States
   aiRunning: boolean;
+  continuityRunning: boolean;
+  dialogueRunning: boolean;
+  pacingRunning: boolean;
   revisionSuggestions: { original: string; revised: string; explanation: string; diffHtml: string } | null;
   continuityWarnings: Array<{ title: string; content: string; severity: 'low' | 'medium' | 'high' }> | null;
   dialogueWarnings: Array<{ title: string; content: string; quote: string }> | null;
@@ -101,6 +104,7 @@ export interface StoreContextType {
   runAIContinuityCheck: () => Promise<void>;
   runAIDialogueCheck: () => Promise<void>;
   runPacingAnalysis: () => Promise<void>;
+  runAllDiagnostics: () => Promise<void>;
   runResearch: (query: string) => Promise<void>;
   approveMemory: (selectedFacts?: ProposedContinuityFact[]) => Promise<void>;
   rejectMemory: () => void;
