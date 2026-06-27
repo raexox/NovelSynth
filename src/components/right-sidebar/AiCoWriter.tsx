@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useStore } from '../../store';
-import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus, Mic, MicOff } from 'lucide-react';
-import { ProseRevisionCard } from './ProseRevisionCard';
+import { Sparkles, Loader2, Send, X, ChevronDown, ChevronRight, History, Plus, Mic, MicOff, Maximize2 } from 'lucide-react';
 import { ChatHistoryDrawer } from './ChatHistoryDrawer';
+import { AiChatModal } from './AiChatModal';
 import { notify } from '../../services/notifications';
 import { useAssemblyAISpeech } from '../../hooks/useAssemblyAISpeech';
 
@@ -19,14 +19,12 @@ export const AiCoWriter: React.FC = () => {
     replaceSelectedText,
     createNewConversation,
     selectConversation,
-    deleteConversation,
-    runAIRevision
+    deleteConversation
   } = useStore();
 
-  const [revisionMode, setRevisionMode] = useState<'light' | 'style' | 'line' | 'dev'>('line');
   const [chatInput, setChatInput] = useState('');
-  const [showRevisionTool, setShowRevisionTool] = useState(false);
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
+  const [showExpandModal, setShowExpandModal] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const baseTextRef = useRef('');
@@ -108,19 +106,30 @@ export const AiCoWriter: React.FC = () => {
           </span>
         </button>
 
-        <button
-          type="button"
-          className="btn btn-secondary"
-          onClick={createNewConversation}
-          style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
-          title="Start New Chat"
-        >
-          <Plus size={13} />
-          <span>New Chat</span>
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={createNewConversation}
+            style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+            title="Start New Chat"
+          >
+            <Plus size={13} />
+            <span>New</span>
+          </button>
+
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => setShowExpandModal(true)}
+            style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
+            title="Expand into Full AI Workspace (ChatGPT Style)"
+          >
+            <Maximize2 size={12} />
+            <span>Expand</span>
+          </button>
+        </div>
       </div>
-      {/* Revision Suggestions Diff view */}
-      {revisionSuggestions && <ProseRevisionCard revisionMode={revisionMode} />}
 
       {/* Selected Text context card */}
       {selectedText && (
@@ -160,51 +169,6 @@ export const AiCoWriter: React.FC = () => {
           </div>
         </div>
       )}
-
-      {/* Collapsible Prose Revision Tools */}
-      <div className="sidebar-section-card" style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: 6, overflow: 'hidden', flexShrink: 0 }}>
-        <div 
-          className="sidebar-section-card-header"
-          style={{ padding: '6px 10px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer', backgroundColor: 'var(--bg-secondary)' }}
-          onClick={() => setShowRevisionTool(!showRevisionTool)}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', color: 'var(--text-secondary)' }}>
-            {showRevisionTool ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-            <span>PROSE REVISION SCANNER</span>
-          </div>
-        </div>
-
-        {showRevisionTool && (
-          <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div className="form-group" style={{ marginBottom: 0 }}>
-              <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Scan Mode</label>
-              <select 
-                className="form-select" 
-                value={revisionMode} 
-                onChange={e => setRevisionMode(e.target.value as any)}
-                disabled={aiRunning}
-                style={{ fontSize: 11.5, padding: '4px 8px' }}
-              >
-                <option value="light">Light Edit (Grammar/Punctuation)</option>
-                <option value="style">Style Edit (Flow & Repetition)</option>
-                <option value="line">Line Edit (Polished Prose Flow)</option>
-                <option value="dev">Dev Edit (Structure Analysis)</option>
-              </select>
-            </div>
-
-            <button 
-              type="button"
-              className="btn btn-primary" 
-              style={{ width: '100%', padding: '6px 10px', display: 'flex', gap: 4, justifyContent: 'center', fontSize: 11.5 }} 
-              onClick={() => runAIRevision(revisionMode)}
-              disabled={aiRunning}
-            >
-              {aiRunning ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />}
-              Run Prose Scan
-            </button>
-          </div>
-        )}
-      </div>
 
       {/* Chat Log container */}
       <div style={{ 
@@ -353,6 +317,8 @@ export const AiCoWriter: React.FC = () => {
           Start New Conversation Thread
         </button>
       )}
+      {/* Expanded AI Chat Workspace Modal */}
+      <AiChatModal isOpen={showExpandModal} onClose={() => setShowExpandModal(false)} />
     </div>
   );
 };
