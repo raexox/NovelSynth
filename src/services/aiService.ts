@@ -417,20 +417,48 @@ export async function getAIChatResponse(
   sceneContent: string,
   selectedText: string,
   settings: ProjectState['settings'],
-  project?: ProjectState
+  project?: ProjectState,
+  activeSceneId?: string
 ): Promise<string> {
+
+  const activeScene = project?.scenes.find(s => s.id === activeSceneId);
+  const activeChapter = activeScene ? project?.chapters.find(c => c.id === activeScene.chapterId) : null;
+
+  let activeSceneNum = 1;
+  let activeChapNum = 1;
+  if (project?.chapters && activeChapter) {
+    activeChapNum = project.chapters.findIndex(c => c.id === activeChapter.id) + 1;
+    const chapScenes = project.scenes.filter(s => s.chapterId === activeChapter.id).sort((a, b) => a.order - b.order);
+    const idx = chapScenes.findIndex(s => s.id === activeScene?.id);
+    if (idx !== -1) activeSceneNum = idx + 1;
+  }
+
+  const activeSceneHeader = `Chapter ${activeChapNum}: "${activeChapter?.title || 'Chapter'}", Scene ${activeSceneNum}: "${activeScene?.title || 'Active Scene'}"`;
 
   let contextBlock = '';
 
-  if (selectedText && selectedText.trim()) {
-    contextBlock = `- Active Highlighted Selection (Primary Focus Target):\n"""\n${selectedText}\n"""\n\n- Full Current Scene Manuscript:\n"""\n${sceneContent || '(Empty scene)'}\n"""`;
-  } else if (project) {
+  if (project) {
+    const outlineStructure = (project.chapters || []).map((chap, cIdx) => {
+      const chapScenes = (project.scenes || [])
+        .filter(s => s.chapterId === chap.id)
+        .sort((a, b) => a.order - b.order)
+        .map((s, sIdx) => {
+          const isActive = s.id === activeSceneId ? ' [CURRENT ACTIVE SCENE IN EDITOR]' : '';
+          return `   - Scene ${sIdx + 1}: "${s.title}" (ID: ${s.id})${isActive}`;
+        })
+        .join('\n');
+      return `Chapter ${cIdx + 1}: "${chap.title}"\n${chapScenes || '   (No scenes)'}`;
+    }).join('\n\n');
+
     const factsSummary = (project.continuityFacts || [])
       .map(f => `• [${f.entityName || 'General'}] (${f.factType || 'fact'}): ${f.factText}`)
       .join('\n');
 
     const sceneMemoriesSummary = (project.memoryUpdates || [])
-      .map(m => `• Scene Summary: ${m.summary}\n  Events: ${(m.events || []).join('; ')}\n  Facts Revealed: ${(m.newFacts || []).join('; ')}`)
+      .map(m => {
+        const sc = project.scenes.find(s => s.id === m.sceneId);
+        return `• [Scene: "${sc?.title || 'Scene memory'}"]: ${m.summary}\n  Events: ${(m.events || []).join('; ')}\n  Facts Revealed: ${(m.newFacts || []).join('; ')}`;
+      })
       .join('\n');
 
     const chapterMemoriesSummary = (project.chapterMemories || [])
@@ -440,36 +468,51 @@ export async function getAIChatResponse(
     const bibleSummary = `Characters: ${project.storyBible?.characters?.map(c => `${c.name} (${c.role})`).join('; ') || 'None'}. Locations: ${project.storyBible?.locations?.map(l => l.name).join('; ') || 'None'}.`;
     const plotSummary = (project.plotThreads || []).filter(p => p.status === 'active').map(p => p.title).join('; ');
 
-    contextBlock = `=== FULL PROJECT CONTEXT (No text highlighted; assuming all facts, scene, & memories context) ===
+    const focusHeader = (selectedText && selectedText.trim()) 
+      ? `- ACTIVE HIGHLIGHTED SELECTION (Author selected this text for editing/focus):\n"""\n${selectedText}\n"""\n\n` 
+      : '';
 
-1. CURRENT SCENE MANUSCRIPT:
+    contextBlock = `=== FULL PROJECT CONTEXT ===
+
+${focusHeader}1. CURRENT ACTIVE SCENE MANUSCRIPT (${activeSceneHeader}):
 """
 ${sceneContent || '(Empty scene content)'}
 """
 
-2. CONTINUITY LEDGER FACTS:
+2. MANUSCRIPT OUTLINE STRUCTURE:
+${outlineStructure || '(No outline available)'}
+
+3. CONTINUITY LEDGER FACTS:
 ${factsSummary || '(No recorded continuity facts yet)'}
 
-3. RECORDED SCENE & CHAPTER MEMORIES:
+4. RECORDED SCENE & CHAPTER MEMORIES:
 ${sceneMemoriesSummary || chapterMemoriesSummary || '(No recorded memories yet)'}
 
-4. STORY BIBLE & ACTIVE PLOT THREADS:
+5. STORY BIBLE & ACTIVE PLOT THREADS:
 ${bibleSummary}
 Active Plot Threads: ${plotSummary || 'None'}`;
   } else {
-    contextBlock = `- Current Scene Manuscript:\n"""\n${sceneContent || '(Empty scene)'}\n"""`;
+    const focusHeader = (selectedText && selectedText.trim()) 
+      ? `- ACTIVE HIGHLIGHTED SELECTION:\n"""\n${selectedText}\n"""\n\n` 
+      : '';
+    contextBlock = `${focusHeader}- Current Active Scene Manuscript (${activeSceneHeader}):\n"""\n${sceneContent || '(Empty scene)'}\n"""`;
   }
 
-  const systemInstruction = `You are a helpful AI writing assistant, line editor, and brainstorming coach integrated inside NovelSynth, an advanced writing IDE.
-Your goal is to help the author brainstorm ideas, outline plots, rewrite sections of their manuscript, or provide developmental suggestions.
+  const systemInstruction = `You are a helpful AI writing assistant, line editor, and developmental coach integrated inside NovelSynth, an advanced writing IDE.
+
+CRITICAL INSTRUCTIONS FOR SCENE QUERIES:
+- When the author asks what happens in a scene (e.g., "what happens in scene 3", "summarize scene 3"), check Section 1 for the manuscript text of the current active scene or Section 4 for recorded memories.
+- Summarize the ACTUAL existing events and manuscript prose provided for that scene.
+- DO NOT generate a new plot outline, draft beats, or creative pitch when asked what happens in an existing scene, UNLESS the author explicitly requests brainstorming, rewriting, or new ideas (e.g., "give me ideas for scene 3" or "create a draft outline for scene 3").
 
 Context Provided:
 ${contextBlock}
 
 Instructions:
 1. Brainstorm creative ideas, give advice, or perform rewrites as requested.
-2. If asked to rewrite, format the rewritten version clearly in clean Markdown so the user can easily review and copy it.
-3. Keep your advice professional, encouraging, and specific to the project context.`;
+2. If asked what happens in a scene or to summarize a scene, provide an accurate summary based strictly on the provided manuscript content and recorded memories.
+3. If asked to rewrite, format the rewritten version clearly in clean Markdown so the user can easily review and copy it.
+4. Keep your advice professional, encouraging, and specific to the project context.`;
 
   let prompt = "Conversation history:\n\n";
   chatHistory.slice(0, -1).forEach(msg => {

@@ -239,7 +239,8 @@ export const useAI = (
         sceneContent,
         selectedText,
         project.settings,
-        project
+        project,
+        activeSceneId
       );
 
       const finalMessages = [...updatedMessages, { role: 'model' as const, content: aiResponse }];
