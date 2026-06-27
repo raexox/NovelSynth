@@ -152,6 +152,74 @@ export const SceneInspector: React.FC = () => {
         </div>
       </div>
 
+      {/* Featured Characters / Cast in Scene */}
+      <div className="form-group" style={{ marginBottom: 0 }}>
+        <label className="form-label" style={{ fontSize: 9.5, display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+          <User size={10} /> Cast in Scene (Featured Characters)
+        </label>
+        
+        {/* Dropdown to add character */}
+        <select
+          className="form-select"
+          style={{ padding: '4px 8px', fontSize: 11.5, marginBottom: 6 }}
+          value=""
+          onChange={e => {
+            const val = e.target.value;
+            if (val && !(activeScene.metadata.characters || []).includes(val)) {
+              updateSceneMetadata(activeScene.id, {
+                characters: [...(activeScene.metadata.characters || []), val]
+              });
+            }
+          }}
+        >
+          <option value="">+ Tag character in scene...</option>
+          {bibleCharacters
+            .filter(c => !(activeScene.metadata.characters || []).includes(c.name))
+            .map((c, idx) => (
+              <option key={idx} value={c.name}>{c.name} ({c.role || 'Character'})</option>
+            ))}
+        </select>
+
+        {/* Tag Pills */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {(activeScene.metadata.characters || []).length === 0 ? (
+            <span style={{ fontSize: 10, color: 'var(--text-muted)', fontStyle: 'italic' }}>No characters tagged.</span>
+          ) : (
+            (activeScene.metadata.characters || []).map((charName, idx) => (
+              <span 
+                key={idx} 
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: 4, 
+                  backgroundColor: 'var(--bg-primary)', 
+                  border: '1px solid var(--border-color)', 
+                  padding: '2px 6px', 
+                  borderRadius: 12, 
+                  fontSize: 10.5, 
+                  color: 'var(--text-primary)',
+                  fontWeight: 600
+                }}
+              >
+                {charName}
+                <button
+                  type="button"
+                  style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                  onClick={() => {
+                    updateSceneMetadata(activeScene.id, {
+                      characters: (activeScene.metadata.characters || []).filter(c => c !== charName)
+                    });
+                  }}
+                  title="Remove tag"
+                >
+                  <X size={10} />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+      </div>
+
       {/* Date & Time (Optional) */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
         <div className="form-group" style={{ marginBottom: 0 }}>

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useStore } from '../../store';
 import type { Scene } from '../../types';
 import { 
-  Sparkles, Plus, Trash2, CheckSquare, Square, FileText, ArrowRight, CornerDownRight, Layers
+  Sparkles, Plus, Trash2, CheckSquare, Square, FileText, ArrowRight, CornerDownRight, Layers, User, X
 } from 'lucide-react';
 
 interface SceneOutlineCardProps {
@@ -11,6 +11,8 @@ interface SceneOutlineCardProps {
 
 export const SceneOutlineCard: React.FC<SceneOutlineCardProps> = ({ scene }) => {
   const { 
+    project,
+    updateSceneMetadata,
     updateSceneOutline, 
     addPlotBeat, 
     togglePlotBeat, 
@@ -86,6 +88,73 @@ export const SceneOutlineCard: React.FC<SceneOutlineCardProps> = ({ scene }) => 
             onChange={handleSummaryChange}
             rows={2}
           />
+        </div>
+
+        {/* Featured Cast / Characters in Scene */}
+        <div className="outline-field-group">
+          <label className="outline-field-label" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <User size={11} />
+            <span>Cast in Scene</span>
+          </label>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <select
+              className="form-select"
+              style={{ padding: '3px 8px', fontSize: 11 }}
+              value=""
+              onChange={e => {
+                const val = e.target.value;
+                if (val && !(scene.metadata?.characters || []).includes(val)) {
+                  updateSceneMetadata(scene.id, {
+                    characters: [...(scene.metadata?.characters || []), val]
+                  });
+                }
+              }}
+            >
+              <option value="">+ Tag character in scene...</option>
+              {(project.storyBible?.characters || [])
+                .filter(c => !(scene.metadata?.characters || []).includes(c.name))
+                .map((c, idx) => (
+                  <option key={idx} value={c.name}>{c.name} ({c.role || 'Character'})</option>
+                ))}
+            </select>
+
+            {/* Tag Pills */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+              {(scene.metadata?.characters || []).length > 0 && (
+                (scene.metadata?.characters || []).map((charName, idx) => (
+                  <span 
+                    key={idx} 
+                    style={{ 
+                      display: 'inline-flex', 
+                      alignItems: 'center', 
+                      gap: 4, 
+                      backgroundColor: 'var(--bg-primary)', 
+                      border: '1px solid var(--border-color)', 
+                      padding: '2px 6px', 
+                      borderRadius: 12, 
+                      fontSize: 10, 
+                      color: 'var(--accent-purple)',
+                      fontWeight: 600
+                    }}
+                  >
+                    {charName}
+                    <button
+                      type="button"
+                      style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 0, display: 'flex' }}
+                      onClick={() => {
+                        updateSceneMetadata(scene.id, {
+                          characters: (scene.metadata?.characters || []).filter(c => c !== charName)
+                        });
+                      }}
+                      title="Remove tag"
+                    >
+                      <X size={10} />
+                    </button>
+                  </span>
+                ))
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Sequential Plot Beats */}
