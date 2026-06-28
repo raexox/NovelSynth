@@ -20,7 +20,7 @@ export interface StoreContextType {
   setViewMode: (mode: 'editor' | 'outline') => void;
   isLeftSidebarOpen: boolean;
   isRightSidebarOpen: boolean;
-  activeBibleCategory: 'characters' | 'locations' | 'factions' | 'powerSystems';
+  activeBibleCategory: 'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems';
   activeBibleItemId: string | null;
   isReferenceModalOpen: boolean;
   openReferenceModal: (tab?: string) => void;

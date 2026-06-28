@@ -94,15 +94,26 @@ export interface PowerSystem {
   examples: string;
 }
 
+export interface LoreEntry {
+  id: string;
+  name: string;
+  era?: string;
+  description?: string;
+  significance?: string;
+  rules?: string;
+  history?: string;
+}
+
 export interface StoryBible {
   characters: Character[];
   locations: Location[];
   factions: Faction[];
+  lore: LoreEntry[];
   powerSystems: PowerSystem[];
 }
 
-export type BibleCategory = 'characters' | 'locations' | 'factions' | 'powerSystems';
-export type ContinuityEntityType = 'character' | 'location' | 'faction' | 'powerSystem' | 'object' | 'timeline' | 'relationship';
+export type BibleCategory = 'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems';
+export type ContinuityEntityType = 'character' | 'location' | 'faction' | 'lore' | 'powerSystem' | 'object' | 'timeline' | 'relationship';
 export type ContinuityFactStatus = 'active' | 'superseded' | 'resolved' | 'contradicted';
 export type ContinuityFactSource = 'memory' | 'bible_edit';
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import type { Character, Location, Faction, PowerSystem } from '../../types';
-import { ArrowLeft, User, MapPin, Sparkles, Users, FileText, Share2, Search, Tag, Camera, X } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Sparkles, BookOpen, Users, FileText, Share2, Tag, Camera, X } from 'lucide-react';
 
 export const BibleItemEditor: React.FC = () => {
   const {
@@ -15,10 +15,10 @@ export const BibleItemEditor: React.FC = () => {
     selectScene
   } = useStore();
 
-  const [activeTab, setActiveTab] = useState<'details' | 'research' | 'relations' | 'mentions'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'relations' | 'mentions' | 'versions'>('details');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const item = project.storyBible[activeBibleCategory].find((i: any) => i.id === activeBibleItemId);
+  const item = project.storyBible[activeBibleCategory]?.find((i: any) => i.id === activeBibleItemId);
   const textValue = (value: unknown) => typeof value === 'string' ? value : '';
   const initialItemRef = useRef<any | null>(null);
   const storyBibleRef = useRef(project.storyBible);
@@ -28,11 +28,17 @@ export const BibleItemEditor: React.FC = () => {
   useEffect(() => {
     if (!item || !activeBibleItemId) return;
 
-    initialItemRef.current = JSON.parse(JSON.stringify(item));
+    if (!initialItemRef.current || initialItemRef.current.id !== activeBibleItemId) {
+      initialItemRef.current = JSON.parse(JSON.stringify(item));
+    }
+  }, [activeBibleItemId, item]);
 
+  useEffect(() => {
     return () => {
       const initialItem = initialItemRef.current;
-      const currentItem = (storyBibleRef.current[activeBibleCategory] as any[]).find(i => i.id === activeBibleItemId);
+      if (!initialItem || !activeBibleItemId) return;
+
+      const currentItem = (storyBibleRef.current[activeBibleCategory] as any[])?.find(i => i.id === activeBibleItemId);
       if (!initialItem || !currentItem || initialItem.id !== activeBibleItemId) return;
 
       const initialSerialized = JSON.stringify(initialItem);
@@ -50,14 +56,14 @@ export const BibleItemEditor: React.FC = () => {
         reason: 'Manual Story Bible edit'
       });
     };
-  }, [activeBibleCategory, activeBibleItemId]);
+  }, [activeBibleCategory, activeBibleItemId, createBibleItemVersion]);
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      if (reader.result) {
+      if (reader.result && item) {
         updateBibleItem(activeBibleCategory, { ...item, avatarUrl: reader.result });
       }
     };
@@ -66,7 +72,7 @@ export const BibleItemEditor: React.FC = () => {
 
   if (!item) {
     return (
-      <div style={{ fontSize: 12, padding: 12, color: 'var(--text-muted)' }}>
+      <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>
         Item not found.
         <button type="button" className="btn btn-secondary" style={{ marginTop: 8 }} onClick={() => setBibleItemId(null)}>
           Close Inspector
@@ -77,11 +83,13 @@ export const BibleItemEditor: React.FC = () => {
 
   const CategoryIcon = activeBibleCategory === 'characters' ? User :
                        activeBibleCategory === 'locations' ? MapPin :
-                       activeBibleCategory === 'factions' ? Users : Sparkles;
+                       activeBibleCategory === 'factions' ? Users :
+                       activeBibleCategory === 'lore' ? BookOpen : Sparkles;
 
   const categoryLabel = activeBibleCategory === 'characters' ? 'Character' :
                         activeBibleCategory === 'locations' ? 'Location' :
-                        activeBibleCategory === 'factions' ? 'Faction' : 'Magic System';
+                        activeBibleCategory === 'factions' ? 'Faction' :
+                        activeBibleCategory === 'lore' ? 'World Lore Entry' : 'Magic & Power System';
 
   const itemFacts = project.continuityFacts
     .filter(fact => fact.entityId === item.id || fact.entityName.toLowerCase() === item.name.toLowerCase())
@@ -392,18 +400,46 @@ export const BibleItemEditor: React.FC = () => {
               </>
             )}
 
-            {/* Magic System Specific Fields */}
+            {/* Lore Entry Specific Fields */}
+            {activeBibleCategory === 'lore' && (
+              <>
+                <div className="form-group" style={{ marginBottom: 8 }}>
+                  <label className="form-label" style={{ fontSize: 10 }}>Era / Time Period</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    style={{ padding: 6, fontSize: 11.5 }}
+                    value={(item as any).era || ''} 
+                    onChange={e => updateBibleItem('lore', { ...item, era: e.target.value })}
+                    placeholder="e.g. Year 0, Years 100-300, Ancient Era..."
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: 0 }}>
+                  <label className="form-label" style={{ fontSize: 10 }}>Historical Overview & Events</label>
+                  <textarea 
+                    className="form-textarea" 
+                    rows={5}
+                    style={{ padding: 8, fontSize: 11.5, lineHeight: 1.4 }}
+                    value={(item as any).description || (item as any).history || ''} 
+                    onChange={e => updateBibleItem('lore', { ...item, description: e.target.value, history: e.target.value })}
+                    placeholder="Describe historical events, myths, legends, or key milestones of this era..."
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Magic & Power System Specific Fields */}
             {activeBibleCategory === 'powerSystems' && (
               <>
                 <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" style={{ fontSize: 10 }}>System Rules & Mechanics</label>
+                  <label className="form-label" style={{ fontSize: 10 }}>System Rules, Mechanics & Affinities</label>
                   <textarea 
                     className="form-textarea" 
-                    rows={4}
+                    rows={5}
                     style={{ padding: 8, fontSize: 11.5, lineHeight: 1.4 }}
-                    value={(item as PowerSystem).rules} 
+                    value={(item as PowerSystem).rules || ''} 
                     onChange={e => updateBibleItem('powerSystems', { ...item, rules: e.target.value })}
-                    placeholder="Energy sources, casting rules, elemental magic mechanics..."
+                    placeholder="Core magic mechanics, casting rules, elemental affinities, costs, and limitations..."
                   />
                 </div>
               </>

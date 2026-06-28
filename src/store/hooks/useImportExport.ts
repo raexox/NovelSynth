@@ -68,7 +68,7 @@ export const useImportExport = (
         }
 
         // Bible items
-        const categories: Array<'characters' | 'locations' | 'factions' | 'powerSystems'> = ['characters', 'locations', 'factions', 'powerSystems'];
+        const categories: Array<'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems'> = ['characters', 'locations', 'factions', 'lore', 'powerSystems'];
         for (const cat of categories) {
           const items = parsed.storyBible?.[cat] || [];
           for (const item of items) {

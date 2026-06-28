@@ -46,12 +46,13 @@ type FactDraft = Pick<
 >;
 
 const statuses: ContinuityFactStatus[] = ['active', 'superseded', 'resolved', 'contradicted'];
-const entityTypes: ContinuityEntityType[] = ['character', 'location', 'faction', 'powerSystem', 'object', 'timeline', 'relationship'];
+const entityTypes: ContinuityEntityType[] = ['character', 'location', 'faction', 'lore', 'powerSystem', 'object', 'timeline', 'relationship'];
 
 const categoryByEntityType: Partial<Record<ContinuityEntityType, BibleCategory>> = {
   character: 'characters',
   location: 'locations',
   faction: 'factions',
+  lore: 'lore',
   powerSystem: 'powerSystems'
 };
 
@@ -148,7 +149,8 @@ export const CanonLedger: React.FC = () => {
     project.storyBible.characters.forEach(c => map.set(c.name, 'character'));
     project.storyBible.locations.forEach(l => map.set(l.name, 'location'));
     project.storyBible.factions.forEach(f => map.set(f.name, 'faction'));
-    project.storyBible.powerSystems.forEach(p => map.set(p.name, 'powerSystem'));
+    (project.storyBible.lore || []).forEach(m => map.set(m.name, 'lore'));
+    (project.storyBible.powerSystems || []).forEach(p => map.set(p.name, 'powerSystem'));
     project.continuityFacts.forEach(f => {
       if (f.entityName && !map.has(f.entityName)) {
         map.set(f.entityName, f.entityType);

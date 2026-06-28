@@ -187,16 +187,20 @@ export const useBooks = (
         characters: [] as any[],
         locations: [] as any[],
         factions: [] as any[],
+        lore: [] as any[],
         powerSystems: [] as any[]
       };
 
       (bibleData || []).forEach((r: any) => {
-        const cat = r.category as 'characters' | 'locations' | 'factions' | 'powerSystems';
-        storyBible[cat].push({
-          id: r.id,
-          name: r.name,
-          ...(r.data || {})
-        });
+        const rawCat = r.category;
+        const cat = (rawCat === 'magic' ? 'powerSystems' : rawCat) as 'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems';
+        if (storyBible[cat]) {
+          storyBible[cat].push({
+            id: r.id,
+            name: r.name,
+            ...(r.data || {})
+          });
+        }
       });
 
       const plotThreads: PlotThread[] = (plotData || []).map((r: any) => ({
@@ -375,6 +379,7 @@ export const useBooks = (
         characters: [],
         locations: [],
         factions: [],
+        lore: [],
         powerSystems: []
       },
       plotThreads: [],

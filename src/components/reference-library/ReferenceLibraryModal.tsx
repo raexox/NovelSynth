@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus, Database, X, Maximize2, Minimize2, ExternalLink
+  User, MapPin, Users, Sparkles, BookOpen, GitCommit, FileText, Search, Trash2, Plus, Database, X, ExternalLink
 } from 'lucide-react';
 import { BibleItemEditor } from '../left-sidebar/BibleItemEditor';
 import { CanonLedger } from '../left-sidebar/CanonLedger';
@@ -42,18 +42,21 @@ export const ReferenceLibraryModal: React.FC = () => {
   if (!isReferenceModalOpen) return null;
 
   const categories = [
-    { id: 'characters', label: 'Characters', icon: User, tab: 'bible', count: project.storyBible.characters.length },
-    { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible', count: project.storyBible.locations.length },
-    { id: 'factions', label: 'Factions', icon: Users, tab: 'bible', count: project.storyBible.factions.length },
-    { id: 'powerSystems', label: 'Magic', icon: Sparkles, tab: 'bible', count: project.storyBible.powerSystems.length },
+    { id: 'characters', label: 'Characters', icon: User, tab: 'bible', count: (project.storyBible.characters || []).length },
+    { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible', count: (project.storyBible.locations || []).length },
+    { id: 'factions', label: 'Factions', icon: Users, tab: 'bible', count: (project.storyBible.factions || []).length },
+    { id: 'lore', label: 'World Lore', icon: BookOpen, tab: 'bible', count: (project.storyBible.lore || []).length },
+    { id: 'powerSystems', label: 'Magic & Power Systems', icon: Sparkles, tab: 'bible', count: (project.storyBible.powerSystems || []).length },
     { id: 'canon', label: 'Canon Ledger', icon: Database, tab: 'canon', count: project.continuityFacts.length },
     { id: 'plots', label: 'Plot Threads', icon: GitCommit, tab: 'plots', count: project.plotThreads.length },
     { id: 'notes', label: 'Scrapbook Notes', icon: FileText, tab: 'notes', count: project.notes.length },
     { id: 'search', label: 'AI Search', icon: Search, tab: 'search', count: null }
   ];
 
-  const activeCategoryLabel = activeBibleCategory === 'powerSystems'
-    ? 'Magic Systems'
+  const activeCategoryLabel = activeBibleCategory === 'lore'
+    ? 'World Lore'
+    : activeBibleCategory === 'powerSystems'
+    ? 'Magic & Power Systems'
     : activeBibleCategory.charAt(0).toUpperCase() + activeBibleCategory.slice(1);
 
   const createBibleItem = () => {
@@ -63,8 +66,10 @@ export const ReferenceLibraryModal: React.FC = () => {
       addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
     } else if (activeBibleCategory === 'factions') {
       addBibleItem('factions', { name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
+    } else if (activeBibleCategory === 'lore') {
+      addBibleItem('lore', { name: 'New Lore Entry', era: '', description: '', significance: '', history: '' });
     } else {
-      addBibleItem('powerSystems', { name: 'New Magic System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
+      addBibleItem('powerSystems', { name: 'New Power System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
     }
   };
 

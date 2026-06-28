@@ -13,6 +13,7 @@ const EMPTY_PROJECT_STATE: ProjectState = {
     characters: [],
     locations: [],
     factions: [],
+    lore: [],
     powerSystems: []
   },
   plotThreads: [],

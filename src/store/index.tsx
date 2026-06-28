@@ -30,6 +30,7 @@ const EMPTY_PROJECT_STATE: ProjectState = {
     characters: [],
     locations: [],
     factions: [],
+    lore: [],
     powerSystems: []
   },
   plotThreads: [],
@@ -66,7 +67,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [viewMode, setViewMode] = useState<'editor' | 'outline'>('editor');
   const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(true);
-  const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'powerSystems'>('characters');
+  const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems'>('characters');
   const [activeBibleItemId, setBibleItemId] = useState<string | null>(null);
   const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
 
@@ -322,7 +323,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   };
   const openReferenceModal = (tab?: string) => {
     if (tab) {
-      if (tab === 'characters' || tab === 'locations' || tab === 'factions' || tab === 'powerSystems') {
+      if (tab === 'characters' || tab === 'locations' || tab === 'factions' || tab === 'lore' || tab === 'powerSystems') {
         setActiveLeftTab('bible');
         setActiveBibleCategory(tab as any);
       } else {
@@ -388,8 +389,25 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       }
 
-      if (type === 'create_power_system' || type === 'create_lore' || type === 'add_power_system' || type === 'add_lore') {
+      if (type === 'create_lore' || type === 'add_lore') {
         const sysName = action.name || 'World History & Lore';
+        await addBibleItem('lore', {
+          name: sysName,
+          era: action.era || '',
+          description: action.description || action.summary || action.content || '',
+          significance: action.significance || '',
+          history: action.history || action.rules || ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Lore Entry Created!',
+          message: `Added "${sysName}" to your World Lore Bible.`
+        });
+        return true;
+      }
+
+      if (type === 'create_power_system' || type === 'create_magic' || type === 'add_power_system' || type === 'add_magic') {
+        const sysName = action.name || 'Magic & Power System';
         await addBibleItem('powerSystems', {
           name: sysName,
           rules: action.rules || action.description || action.history || action.content || '',
@@ -400,8 +418,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         });
         notify({
           tone: 'success',
-          title: 'Lore Entry Created!',
-          message: `Added "${sysName}" to your Lore & Magic Bible.`
+          title: 'Power System Created!',
+          message: `Added "${sysName}" to your Magic & Power Systems Bible.`
         });
         return true;
       }

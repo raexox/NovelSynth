@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, GitCommit, FileText, Search, Trash2, Plus, Database, Maximize2, ChevronDown, ChevronRight, Filter, Globe, BookOpen
+  User, MapPin, Users, Sparkles, Wand2, Zap, GitCommit, FileText, Search, Trash2, Plus, Database, Maximize2, ChevronDown, ChevronRight, Filter, Globe, BookOpen, Scroll
 } from 'lucide-react';
 import { BibleItemEditor } from './BibleItemEditor';
 import { PlotThreadsTracker } from './PlotThreadsTracker';
@@ -9,7 +9,7 @@ import { ScrapbookNotes } from './ScrapbookNotes';
 import { IntelligentSearch } from './IntelligentSearch';
 import { CanonLedger } from './CanonLedger';
 
-type BibleCategory = 'characters' | 'locations' | 'factions' | 'powerSystems';
+type BibleCategory = 'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems';
 
 export const ReferenceLibrary: React.FC = () => {
   const [pendingDelete, setPendingDelete] = useState<{ category: BibleCategory; id: string; name: string } | null>(null);
@@ -19,8 +19,9 @@ export const ReferenceLibrary: React.FC = () => {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     characters: true,
     locations: true,
-    powerSystems: true,
-    factions: true
+    factions: true,
+    lore: true,
+    powerSystems: true
   });
 
   const {
@@ -28,6 +29,7 @@ export const ReferenceLibrary: React.FC = () => {
     activeLeftTab,
     activeBibleCategory,
     activeBibleItemId,
+    isReferenceModalOpen,
     setLeftTab,
     setBibleCategory,
     setBibleItemId,
@@ -48,8 +50,10 @@ export const ReferenceLibrary: React.FC = () => {
       addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
     } else if (category === 'factions') {
       addBibleItem('factions', { name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
+    } else if (category === 'lore') {
+      addBibleItem('lore', { name: 'New Lore Entry', era: '', description: '', significance: '', history: '' });
     } else {
-      addBibleItem('powerSystems', { name: 'New Magic System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
+      addBibleItem('powerSystems', { name: 'New Power System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
     }
   };
 
@@ -68,14 +72,18 @@ export const ReferenceLibrary: React.FC = () => {
     if (cat === 'factions') {
       return item.leader ? `Leader: ${item.leader}` : (item.beliefs || 'No details added yet.');
     }
+    if (cat === 'lore') {
+      return item.era ? `Era: ${item.era}` : (item.description || item.history || 'No history recorded yet.');
+    }
     return item.rules || item.limitations || 'No rules defined yet.';
   };
 
   const bCategories: Array<{ id: BibleCategory; label: string; icon: any }> = [
     { id: 'characters', label: 'Characters', icon: User },
     { id: 'locations', label: 'Locations', icon: MapPin },
-    { id: 'powerSystems', label: 'Lore & Magic', icon: Sparkles },
-    { id: 'factions', label: 'Factions', icon: Users }
+    { id: 'factions', label: 'Factions', icon: Users },
+    { id: 'lore', label: 'World Lore', icon: BookOpen },
+    { id: 'powerSystems', label: 'Magic & Power Systems', icon: Sparkles }
   ];
 
   return (
@@ -325,7 +333,7 @@ export const ReferenceLibrary: React.FC = () => {
       </div>
 
       {/* FIXED POSITION POP-OUT DETAIL INSPECTOR PANEL (Pops out to the right of the left sidebar without being clipped!) */}
-      {activeLeftTab === 'bible' && activeBibleItemId !== null && (
+      {!isReferenceModalOpen && activeLeftTab === 'bible' && activeBibleItemId !== null && (
         <div 
           style={{
             position: 'fixed',

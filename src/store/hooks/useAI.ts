@@ -26,10 +26,11 @@ const inferProposedFactsFromMemory = (
       const character = project.storyBible.characters.find(c => normalizedFact.includes(c.name.toLowerCase()));
       const location = project.storyBible.locations.find(l => normalizedFact.includes(l.name.toLowerCase()));
       const faction = project.storyBible.factions.find(f => normalizedFact.includes(f.name.toLowerCase()));
-      const powerSystem = project.storyBible.powerSystems.find(p => normalizedFact.includes(p.name.toLowerCase()));
+      const loreItem = (project.storyBible.lore || []).find(m => normalizedFact.includes(m.name.toLowerCase()));
+      const powerSystem = (project.storyBible.powerSystems || []).find(p => normalizedFact.includes(p.name.toLowerCase()));
       const povCharacter = project.storyBible.characters.find(c => c.name.toLowerCase() === scene.metadata.pov.toLowerCase());
 
-      if (character || (!location && !faction && !powerSystem && povCharacter)) {
+      if (character || (!location && !faction && !loreItem && !powerSystem && povCharacter)) {
         const entity = character || povCharacter;
         return {
           entityType: 'character',
@@ -144,10 +145,13 @@ export const useAI = (
     const loc = project.storyBible.locations.find(l => l.name.toLowerCase() === scene.metadata.location.toLowerCase());
     if (loc) contexts.push(`Location Profile: ${loc.name}`);
 
-    // Scan magic rules if mentioned
-    if (scene.content.toLowerCase().includes('magic') || scene.content.toLowerCase().includes('aether')) {
-      project.storyBible.powerSystems.forEach(sys => {
-        contexts.push(`Magic System: ${sys.name}`);
+    // Scan lore & power system rules if mentioned
+    if (scene.content.toLowerCase().includes('magic') || scene.content.toLowerCase().includes('lore') || scene.content.toLowerCase().includes('power')) {
+      (project.storyBible.lore || []).forEach(sys => {
+        contexts.push(`World Lore: ${sys.name}`);
+      });
+      (project.storyBible.powerSystems || []).forEach(sys => {
+        contexts.push(`Magic & Power System: ${sys.name}`);
       });
     }
     
@@ -522,13 +526,14 @@ export const useAI = (
         if (!fact.factText?.trim()) continue;
 
         const matchedItem = fact.entityId
-          ? [...project.storyBible.characters, ...project.storyBible.locations, ...project.storyBible.factions, ...project.storyBible.powerSystems].find((item: any) => item.id === fact.entityId) || null
+          ? [...project.storyBible.characters, ...project.storyBible.locations, ...project.storyBible.factions, ...(project.storyBible.lore || []), ...(project.storyBible.powerSystems || [])].find((item: any) => item.id === fact.entityId) || null
           : findBibleItemByEntity(project, fact.entityType, fact.entityName);
         const matchedCategory =
           matchedItem && project.storyBible.characters.some(item => item.id === matchedItem.id) ? 'characters' :
           matchedItem && project.storyBible.locations.some(item => item.id === matchedItem.id) ? 'locations' :
           matchedItem && project.storyBible.factions.some(item => item.id === matchedItem.id) ? 'factions' :
-          matchedItem && project.storyBible.powerSystems.some(item => item.id === matchedItem.id) ? 'powerSystems' :
+          matchedItem && (project.storyBible.lore || []).some(item => item.id === matchedItem.id) ? 'lore' :
+          matchedItem && (project.storyBible.powerSystems || []).some(item => item.id === matchedItem.id) ? 'powerSystems' :
           null;
         const entityId = fact.entityId || matchedItem?.id || null;
 

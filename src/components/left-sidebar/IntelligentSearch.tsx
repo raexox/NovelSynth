@@ -5,7 +5,7 @@ import { Search, BookOpen, User, MapPin, GitCommit, ArrowRight, Database, Shield
 
 interface SearchResult {
   id: string;
-  type: 'scene' | 'character' | 'location' | 'faction' | 'magic' | 'canon' | 'thread' | 'note';
+  type: 'scene' | 'character' | 'location' | 'faction' | 'lore' | 'powerSystem' | 'canon' | 'thread' | 'note';
   title: string;
   snippet: string;
   score: number;
@@ -212,11 +212,19 @@ export const IntelligentSearch: React.FC = () => {
       }
     });
 
-    project.storyBible.powerSystems.forEach(m => {
+    (project.storyBible.lore || []).forEach(m => {
+      const fullText = `${m.name} ${m.era || ''} ${m.description || ''} ${m.history || ''}`;
+      const { score, termsMatched, snippet } = evaluateText(fullText, m.name);
+      if (score >= 80) {
+        matches.push({ id: m.id, type: 'lore', title: `World Lore: ${m.name}`, snippet: snippet || m.description || `Lore entry`, score, termsMatched });
+      }
+    });
+
+    (project.storyBible.powerSystems || []).forEach(m => {
       const fullText = `${m.name} ${m.rules} ${m.limitations} ${m.costs}`;
       const { score, termsMatched, snippet } = evaluateText(fullText, m.name);
       if (score >= 80) {
-        matches.push({ id: m.id, type: 'magic', title: `Magic System: ${m.name}`, snippet: snippet || `Rules: ${m.rules}`, score, termsMatched });
+        matches.push({ id: m.id, type: 'powerSystem', title: `Magic & Power System: ${m.name}`, snippet: snippet || `Rules: ${m.rules}`, score, termsMatched });
       }
     });
 
@@ -255,9 +263,9 @@ export const IntelligentSearch: React.FC = () => {
     if (res.sceneId) {
       selectScene(res.sceneId);
       if (closeReferenceModal) closeReferenceModal();
-    } else if (res.type === 'character' || res.type === 'location' || res.type === 'faction' || res.type === 'magic') {
+    } else if (res.type === 'character' || res.type === 'location' || res.type === 'faction' || res.type === 'lore' || res.type === 'powerSystem') {
       setLeftTab('bible');
-      const catMap: Record<string, any> = { character: 'characters', location: 'locations', faction: 'factions', magic: 'powerSystems' };
+      const catMap: Record<string, any> = { character: 'characters', location: 'locations', faction: 'factions', lore: 'lore', powerSystem: 'powerSystems' };
       setBibleCategory(catMap[res.type]);
       setBibleItemId(res.id);
     } else if (res.type === 'canon') {
@@ -271,7 +279,7 @@ export const IntelligentSearch: React.FC = () => {
     if (activeFilter === 'all') return true;
     if (activeFilter === 'scene') return res.type === 'scene';
     if (activeFilter === 'canon') return res.type === 'canon';
-    if (activeFilter === 'bible') return res.type === 'character' || res.type === 'location' || res.type === 'faction' || res.type === 'magic';
+    if (activeFilter === 'bible') return res.type === 'character' || res.type === 'location' || res.type === 'faction' || res.type === 'lore' || res.type === 'powerSystem';
     if (activeFilter === 'thread') return res.type === 'thread' || res.type === 'note';
     return true;
   });
@@ -371,27 +379,7 @@ export const IntelligentSearch: React.FC = () => {
         </div>
       )}
 
-      {/* Filter Tabs */}
-      {searched && (
-        <div style={{ display: 'flex', gap: 6, alignItems: 'center', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 10, marginTop: 6 }}>
-          <Filter size={12} style={{ color: 'var(--text-muted)', marginRight: 4 }} />
-          {(['all', 'canon', 'scene', 'bible', 'thread'] as FilterType[]).map(f => {
-            const labels: Record<FilterType, string> = { all: 'All Exact Matches', canon: 'Canon Facts', scene: 'Scenes', bible: 'World Bible', thread: 'Plot Threads' };
-            return (
-              <button
-                key={f}
-                type="button"
-                className={`btn btn-sm ${activeFilter === f ? 'btn-primary' : 'btn-secondary'}`}
-                style={{ fontSize: 11, padding: '3px 10px', borderRadius: 14 }}
-                onClick={() => setActiveFilter(f)}
-              >
-                {labels[f]}
-              </button>
-            );
-          })}
-        </div>
-      )}
-
+      {/* Direct Search Matches List */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, flex: 1, overflowY: 'auto' }}>
         {searched && filteredResults.length === 0 && (
           <div style={{ fontSize: 13, color: 'var(--text-muted)', textAlign: 'center', marginTop: 24, padding: 24, backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: 8 }}>
@@ -430,7 +418,8 @@ export const IntelligentSearch: React.FC = () => {
                 {res.type === 'character' && <User size={13} style={{ color: 'var(--accent-gold)' }} />}
                 {res.type === 'location' && <MapPin size={13} style={{ color: '#3b82f6' }} />}
                 {res.type === 'faction' && <Shield size={13} style={{ color: '#10b981' }} />}
-                {res.type === 'magic' && <Sparkles size={13} style={{ color: '#f59e0b' }} />}
+                {res.type === 'lore' && <BookOpen size={13} style={{ color: '#ec4899' }} />}
+                {res.type === 'powerSystem' && <Sparkles size={13} style={{ color: '#f59e0b' }} />}
                 {res.type === 'canon' && <Database size={13} style={{ color: '#ec4899' }} />}
                 {res.type === 'thread' && <GitCommit size={13} style={{ color: '#8b5cf6' }} />}
                 
@@ -442,7 +431,6 @@ export const IntelligentSearch: React.FC = () => {
             </div>
             
             <p style={{ fontSize: 12, color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>{res.snippet}</p>
-
             {res.sceneId && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: 'var(--accent-purple-light, #c084fc)', marginTop: 4, fontWeight: 600 }}>
                 Jump to scene <ArrowRight size={11} />
