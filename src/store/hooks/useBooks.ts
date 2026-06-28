@@ -396,7 +396,15 @@ export const useBooks = (
         typewriterMode: false,
         focusMode: false,
         splitView: false,
-        theme: DEFAULT_THEME
+        povType: '3rd Person (Limited)',
+        defaultPovCharacter: '',
+        povNotes: '',
+        proseTense: 'Past',
+        proseLanguage: 'US English',
+        authorName: '',
+        seriesName: '',
+        seriesIndex: '',
+        labels: []
       }
     });
   };

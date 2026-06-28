@@ -77,7 +77,17 @@ export async function getAIChatResponse(
       ? `- ACTIVE HIGHLIGHTED SELECTION (Author selected this text for editing/focus):\n"""\n${selectedText}\n"""\n\n` 
       : '';
 
+    const povContext = [
+      `Perspective: ${settings.povType || 'Third Person Limited'}`,
+      settings.defaultPovCharacter ? `Default POV Character: ${settings.defaultPovCharacter}` : null,
+      activeScene?.metadata?.pov ? `Current Scene POV Character: ${activeScene.metadata.pov}` : null,
+      settings.povNotes ? `POV Guidelines: ${settings.povNotes}` : null
+    ].filter(Boolean).join(' | ');
+
     contextBlock = `=== OPTIMIZED PROJECT CONTEXT ===
+
+0. BOOK CREATIVE DIRECTION & POINT OF VIEW:
+${povContext}
 
 ${focusHeader}1. CURRENT ACTIVE SCENE MANUSCRIPT (${activeSceneHeader}):
 """

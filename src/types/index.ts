@@ -231,5 +231,14 @@ export interface ProjectState {
     description?: string;
     targetWordCount?: number;
     coverImageUrl?: string;
+    povType?: string;
+    defaultPovCharacter?: string;
+    povNotes?: string;
+    proseTense?: 'Past' | 'Present';
+    proseLanguage?: string;
+    authorName?: string;
+    seriesName?: string;
+    seriesIndex?: string;
+    labels?: string[];
   };
 }

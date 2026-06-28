@@ -196,7 +196,7 @@ export const useManuscript = (
       const order = chapterScenes.length + 1;
       
       const defaultMetadata = {
-        pov: project.storyBible.characters[0]?.name || "",
+        pov: project.settings.defaultPovCharacter || project.storyBible.characters[0]?.name || "",
         date: "",
         time: "",
         location: project.storyBible.locations[0]?.name || "",

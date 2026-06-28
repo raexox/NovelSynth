@@ -30,8 +30,9 @@ Factions: ${JSON.stringify(trimmedFactions)}
 Power/Magic Systems: ${JSON.stringify(trimmedSystems)}
 
 Active Scene Metadata:
-POV: ${metadata.pov}
-Date: ${metadata.date}
+POV Character: ${metadata.pov || settings.defaultPovCharacter || 'Unspecified'}
+Narrative Perspective: ${settings.povType || 'Third Person Limited'}
+${settings.povNotes ? `POV Style Guidelines: ${settings.povNotes}\n` : ''}Date: ${metadata.date}
 Time: ${metadata.time}
 Location: ${metadata.location}
 Characters present: ${JSON.stringify(metadata.characters)}
