@@ -30,6 +30,7 @@ export const ReferenceLibrary: React.FC = () => {
     activeBibleCategory,
     activeBibleItemId,
     isReferenceModalOpen,
+    isAiChatModalOpen,
     setLeftTab,
     setBibleCategory,
     setBibleItemId,
@@ -333,7 +334,7 @@ export const ReferenceLibrary: React.FC = () => {
       </div>
 
       {/* FIXED POSITION POP-OUT DETAIL INSPECTOR PANEL (Pops out to the right of the left sidebar without being clipped!) */}
-      {!isReferenceModalOpen && activeLeftTab === 'bible' && activeBibleItemId !== null && (
+      {!isReferenceModalOpen && !isAiChatModalOpen && activeLeftTab === 'bible' && activeBibleItemId !== null && (
         <div 
           style={{
             position: 'fixed',
@@ -345,7 +346,7 @@ export const ReferenceLibrary: React.FC = () => {
             borderRight: '1px solid var(--border-color)',
             borderLeft: '1px solid var(--border-color)',
             boxShadow: '10px 0 30px rgba(0, 0, 0, 0.6)',
-            zIndex: 99999,
+            zIndex: 500,
             overflowY: 'auto',
             padding: 12,
             borderRadius: '0 8px 8px 0'

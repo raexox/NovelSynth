@@ -11,6 +11,8 @@ interface AiActionCardProps {
     location?: string;
     pov?: string;
     name?: string;
+    age?: string;
+    era?: string;
     role?: string;
     personality?: string;
     appearance?: string;
@@ -63,11 +65,17 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
     applyLabel = '⚡ Click to Add to Story Bible';
     appliedLabel = '✓ Added to Story Bible';
     icon = <MapPin size={13} />;
-  } else if (actionType === 'create_power_system' || actionType === 'create_lore' || actionType === 'add_power_system' || actionType === 'add_lore') {
-    title = 'New Lore & Magic Entry';
-    badgeLabel = action.name || 'Lore Bible';
-    applyLabel = '⚡ Click to Add to Lore Bible';
-    appliedLabel = '✓ Added to Lore Bible';
+  } else if (actionType === 'create_lore' || actionType === 'add_lore') {
+    title = 'New World Lore Entry';
+    badgeLabel = action.name || 'World Lore';
+    applyLabel = '⚡ Click to Add to World Lore';
+    appliedLabel = '✓ Added to World Lore';
+    icon = <BookOpen size={13} />;
+  } else if (actionType === 'create_power_system' || actionType === 'create_magic' || actionType === 'add_power_system' || actionType === 'add_magic') {
+    title = 'New Magic & Power System';
+    badgeLabel = action.name || 'Power System';
+    applyLabel = '⚡ Click to Add to Power Systems';
+    appliedLabel = '✓ Added to Power Systems';
     icon = <Sparkles size={13} />;
   } else if (actionType === 'create_faction' || actionType === 'add_faction') {
     title = 'New Faction Profile';
@@ -143,11 +151,25 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
         )}
 
         {/* Lore / Power System details */}
-        {(actionType === 'create_power_system' || actionType === 'create_lore' || actionType === 'add_power_system' || actionType === 'add_lore') && (
+        {(actionType === 'create_lore' || actionType === 'add_lore') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
+            {(action as any).era && <div><strong>Era:</strong> {(action as any).era}</div>}
+            {((action as any).description || action.rules) && (
+              <div>
+                <strong>Overview / History:</strong>
+                <div style={{ maxHeight: 80, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {(action as any).description || action.rules}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {(actionType === 'create_power_system' || actionType === 'create_magic' || actionType === 'add_power_system' || actionType === 'add_magic') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
             {action.rules && (
               <div>
-                <strong>Content / Rules:</strong>
+                <strong>Rules & Mechanics:</strong>
                 <div style={{ maxHeight: 80, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
                   {action.rules}
                 </div>

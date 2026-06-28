@@ -25,6 +25,9 @@ export interface StoreContextType {
   isReferenceModalOpen: boolean;
   openReferenceModal: (tab?: string) => void;
   closeReferenceModal: () => void;
+  isAiChatModalOpen: boolean;
+  openAiChatModal: () => void;
+  closeAiChatModal: () => void;
   
   // Auth & Hierarchy States
   user: User | null;

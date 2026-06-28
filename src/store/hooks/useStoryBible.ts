@@ -11,18 +11,21 @@ export const useStoryBible = (
   const updateBibleItem = async (category: BibleCategory, item: any) => {
     try {
       const { id, name, ...data } = item;
-      const { error } = await supabase
-        .from('story_bible_items')
-        .update({
-          name,
-          data
-        })
-        .eq('id', id);
+      if (id && !id.startsWith('local-')) {
+        const { error } = await supabase
+          .from('story_bible_items')
+          .update({
+            name,
+            data
+          })
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) console.error('Failed to update bible item in DB:', error);
+      }
 
       setProject(prev => {
-        const updatedCategory = (prev.storyBible[category] as any[]).map((i: any) => i.id === item.id ? item : i);
+        const currentList = prev.storyBible?.[category] || [];
+        const updatedCategory = currentList.map((i: any) => i.id === item.id ? item : i);
         return {
           ...prev,
           storyBible: {
@@ -37,57 +40,74 @@ export const useStoryBible = (
   };
 
   const addBibleItem = async (category: BibleCategory, item: any) => {
-    if (!activeBookId) return;
-    try {
-      const { id: _id, name, ...data } = item;
-      const { data: inserted, error } = await supabase
-        .from('story_bible_items')
-        .insert({
-          book_id: activeBookId,
-          category,
-          name: name || `New ${category}`,
-          data
-        })
-        .select()
-        .single();
+    const localId = `local-${category}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const newItem = {
+      id: item.id || localId,
+      name: item.name || `New ${category}`,
+      ...item
+    };
 
-      if (error) throw error;
+    let persistentId = newItem.id;
 
-      const newItem = {
-        id: inserted.id,
-        name: inserted.name,
-        ...(inserted.data || {})
-      };
+    if (activeBookId) {
+      try {
+        const { id: _id, name, ...data } = item;
+        const { data: inserted, error } = await supabase
+          .from('story_bible_items')
+          .insert({
+            book_id: activeBookId,
+            category,
+            name: name || `New ${category}`,
+            data
+          })
+          .select()
+          .single();
 
-      setProject(prev => ({
+        if (!error && inserted) {
+          persistentId = inserted.id;
+          newItem.id = inserted.id;
+        } else if (error) {
+          console.warn('Database insert failed, adding to local session only:', error);
+        }
+      } catch (err) {
+        console.warn('Database insert error, adding to local session only:', err);
+      }
+    }
+
+    setProject(prev => {
+      const currentList = prev.storyBible?.[category] || [];
+      return {
         ...prev,
         storyBible: {
           ...prev.storyBible,
-          [category]: [...prev.storyBible[category], newItem]
+          [category]: [...currentList, newItem]
         }
-      }));
-      setBibleItemId(inserted.id);
-    } catch (err) {
-      console.error('Failed to add bible item:', err);
-    }
+      };
+    });
+    setBibleItemId(persistentId);
   };
 
   const deleteBibleItem = async (category: BibleCategory, id: string) => {
     try {
-      const { error } = await supabase
-        .from('story_bible_items')
-        .delete()
-        .eq('id', id);
+      if (id && !id.startsWith('local-')) {
+        const { error } = await supabase
+          .from('story_bible_items')
+          .delete()
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) console.warn('Failed to delete from DB:', error);
+      }
 
-      setProject(prev => ({
-        ...prev,
-        storyBible: {
-          ...prev.storyBible,
-          [category]: (prev.storyBible[category] as any[]).filter((i: any) => i.id !== id)
-        }
-      }));
+      setProject(prev => {
+        const currentList = prev.storyBible?.[category] || [];
+        return {
+          ...prev,
+          storyBible: {
+            ...prev.storyBible,
+            [category]: currentList.filter((i: any) => i.id !== id)
+          }
+        };
+      });
       if (activeBibleItemId === id) {
         setBibleItemId(null);
       }

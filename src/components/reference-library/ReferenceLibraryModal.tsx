@@ -75,7 +75,7 @@ export const ReferenceLibraryModal: React.FC = () => {
 
   // Currently selected entity for relational inspector
   const activeEntity = activeLeftTab === 'bible' && activeBibleItemId 
-    ? project.storyBible[activeBibleCategory].find((i: any) => i.id === activeBibleItemId)
+    ? (project.storyBible[activeBibleCategory] || []).find((i: any) => i.id === activeBibleItemId)
     : null;
 
   const connectedFacts = activeEntity 
@@ -87,7 +87,7 @@ export const ReferenceLibraryModal: React.FC = () => {
     : [];
 
   const itemsList = activeLeftTab === 'bible' 
-    ? project.storyBible[activeBibleCategory].filter((item: any) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? (project.storyBible[activeBibleCategory] || []).filter((item: any) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
     : [];
 
   return (

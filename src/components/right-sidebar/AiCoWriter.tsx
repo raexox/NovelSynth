@@ -21,12 +21,14 @@ export const AiCoWriter: React.FC = () => {
     replaceSelectedText,
     createNewConversation,
     selectConversation,
-    deleteConversation
+    deleteConversation,
+    isAiChatModalOpen,
+    openAiChatModal,
+    closeAiChatModal
   } = useStore();
 
   const [chatInput, setChatInput] = useState('');
   const [showHistoryDrawer, setShowHistoryDrawer] = useState(false);
-  const [showExpandModal, setShowExpandModal] = useState(false);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -135,7 +137,7 @@ export const AiCoWriter: React.FC = () => {
           <button
             type="button"
             className="btn btn-primary"
-            onClick={() => setShowExpandModal(true)}
+            onClick={openAiChatModal}
             style={{ padding: '3px 8px', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4 }}
             title="Expand into Full AI Workspace (ChatGPT Style)"
           >
@@ -368,7 +370,7 @@ export const AiCoWriter: React.FC = () => {
         </button>
       )}
       {/* Expanded AI Chat Workspace Modal */}
-      <AiChatModal isOpen={showExpandModal} onClose={() => setShowExpandModal(false)} />
+      <AiChatModal isOpen={isAiChatModalOpen} onClose={closeAiChatModal} />
     </div>
   );
 };

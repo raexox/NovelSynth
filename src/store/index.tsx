@@ -70,6 +70,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [activeBibleCategory, setActiveBibleCategory] = useState<'characters' | 'locations' | 'factions' | 'lore' | 'powerSystems'>('characters');
   const [activeBibleItemId, setBibleItemId] = useState<string | null>(null);
   const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
+  const [isAiChatModalOpen, setIsAiChatModalOpen] = useState(false);
 
   // Auth & Book Hierarchy States
   const [user, setUser] = useState<User | null>(null);
@@ -333,6 +334,8 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     setIsReferenceModalOpen(true);
   };
   const closeReferenceModal = () => setIsReferenceModalOpen(false);
+  const openAiChatModal = () => setIsAiChatModalOpen(true);
+  const closeAiChatModal = () => setIsAiChatModalOpen(false);
   const loadBibleItemVersions = (itemId: string) => {
     return (project.bibleItemVersions || [])
       .filter(version => version.bibleItemId === itemId)
@@ -552,6 +555,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       isReferenceModalOpen,
       openReferenceModal,
       closeReferenceModal,
+      isAiChatModalOpen,
+      openAiChatModal,
+      closeAiChatModal,
       
       user,
       authLoading,

@@ -120,15 +120,26 @@ Instructions:
 4. PROPOSED ACTIONS (CRITICAL RULE: Match the action type to author request):
 - MULTITASKING / SEPARATE ENTRIES: When the author asks to add multi-part lore, world history drafts with multiple eras, or multiple characters/locations/factions at once, DO NOT lump everything into one giant entry or write meta-language like "Below is the JSON action block"! Output SEPARATE \`\`\`json:action\`\`\` blocks at the end of your response for EACH distinct era, topic, or entity (e.g. one for "The Primitive Age", one for "The First Miracle", etc.) so the author can add each one cleanly.
 - If the author asks you to create/add a character, YOU MUST USE 'type': 'create_character'.
-- If the author asks you to add world history, lore, magic systems, rules, or background to the lore bible, YOU MUST USE 'type': 'create_power_system'. DO NOT output 'create_plot_thread' or 'update_scene_outline' when asked to update the lore bible!
+- If the author asks to add world history, historical eras, timeline events, myths, or legends, YOU MUST USE 'type': 'create_lore'.
+- If the author asks to add magic systems, casting rules, power mechanics, or elemental affinities, YOU MUST USE 'type': 'create_power_system'.
 Explain your suggestions naturally in conversational text, and append proposed action JSON blocks at the VERY END of your message in these exact formats:
 
-For Creating Lore & Magic Systems / World History (USE THIS WHEN AUTHOR ASKS TO ADD WORLD HISTORY, LORE, OR MAGIC TO THE BIBLE):
+For Creating World Lore & Historical Eras:
+\`\`\`json:action
+{
+  "type": "create_lore",
+  "name": "Title of Specific Era or History Topic (e.g. The Primitive Age)",
+  "era": "Time period (e.g. Before Year 0, Years 100-300)",
+  "description": "Detailed text of historical events, milestones, or world lore..."
+}
+\`\`\`
+
+For Creating Magic & Power Systems:
 \`\`\`json:action
 {
   "type": "create_power_system",
-  "name": "Title of Specific Era or Lore Topic (e.g. The Primitive Age)",
-  "rules": "Detailed text of this specific era, rules, mechanics, or background details..."
+  "name": "Magic / Power System Name (e.g. Aetherian Spellcraft)",
+  "rules": "Casting mechanics, elemental affinities, costs, limitations, and rules..."
 }
 \`\`\`
 
