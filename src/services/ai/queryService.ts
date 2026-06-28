@@ -13,7 +13,7 @@ export async function getAIIntelligentQuery(
   const canonSummary = project.continuityFacts
     .map(f => `Fact (${f.status}): [${f.entityName}] ${f.factText}`)
     .join('\n');
-  const bibleSummary = `Characters: ${project.storyBible.characters.map(c => `${c.name} (${c.role})`).join('; ')}. Locations: ${project.storyBible.locations.map(l => l.name).join('; ')}`;
+  const bibleSummary = `Characters: ${project.storyBible.characters.filter(c => !c.isFolder).map(c => `${c.name} (${c.role})`).join('; ')}. Locations: ${project.storyBible.locations.filter(l => !l.isFolder).map(l => l.name).join('; ')}`;
 
   const systemInstruction = `You are an AI Worldbuilding & Manuscript Intelligence Engine inside NovelSynth.
 Your task is to answer the author's question or search query directly by analyzing the provided manuscript scenes, canon ledger facts, and story bible.

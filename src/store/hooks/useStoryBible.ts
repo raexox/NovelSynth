@@ -100,11 +100,15 @@ export const useStoryBible = (
 
       setProject(prev => {
         const currentList = prev.storyBible?.[category] || [];
+        // If deleting a folder, unassign folderId from child items
+        const updatedList = currentList
+          .filter((i: any) => i.id !== id)
+          .map((i: any) => i.folderId === id ? { ...i, folderId: null } : i);
         return {
           ...prev,
           storyBible: {
             ...prev.storyBible,
-            [category]: currentList.filter((i: any) => i.id !== id)
+            [category]: updatedList
           }
         };
       });
@@ -114,6 +118,14 @@ export const useStoryBible = (
     } catch (err) {
       console.error('Failed to delete bible item:', err);
     }
+  };
+
+  const addFolder = async (category: BibleCategory, name: string) => {
+    await addBibleItem(category, { name: name || 'New Folder', isFolder: true });
+  };
+
+  const updateFolder = async (category: BibleCategory, folderId: string, name: string) => {
+    await updateBibleItem(category, { id: folderId, name, isFolder: true });
   };
 
   const addContinuityFact = async (fact: Omit<ContinuityFact, 'id' | 'createdAt'>) => {
@@ -307,6 +319,8 @@ export const useStoryBible = (
     updateBibleItem,
     addBibleItem,
     deleteBibleItem,
+    addFolder,
+    updateFolder,
     addContinuityFact,
     updateContinuityFact,
     deleteContinuityFact,

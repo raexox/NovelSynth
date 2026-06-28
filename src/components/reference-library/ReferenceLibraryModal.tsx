@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useStore } from '../../store';
 import { 
-  User, MapPin, Users, Sparkles, BookOpen, GitCommit, FileText, Search, Trash2, Plus, Database, X, ExternalLink
+  User, MapPin, Users, Sparkles, BookOpen, GitCommit, FileText, Search, Trash2, Plus, Database, X, ExternalLink, Folder, FolderPlus, ChevronDown, ChevronRight, Edit2, FolderOpen
 } from 'lucide-react';
 import { BibleItemEditor } from '../left-sidebar/BibleItemEditor';
 import { CanonLedger } from '../left-sidebar/CanonLedger';
@@ -22,11 +22,15 @@ export const ReferenceLibraryModal: React.FC = () => {
     setBibleItemId,
     addBibleItem,
     deleteBibleItem,
+    addFolder,
+    updateFolder,
     selectScene
   } = useStore();
 
-  const [pendingDelete, setPendingDelete] = useState<{ category: any; id: string; name: string } | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<{ category: any; id: string; name: string; isFolder?: boolean } | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [collapsedFolders, setCollapsedFolders] = useState<Record<string, boolean>>({});
+  const [editingFolderId, setEditingFolderId] = useState<string | null>(null);
 
   // ESC key listener to close modal
   useEffect(() => {
@@ -42,11 +46,11 @@ export const ReferenceLibraryModal: React.FC = () => {
   if (!isReferenceModalOpen) return null;
 
   const categories = [
-    { id: 'characters', label: 'Characters', icon: User, tab: 'bible', count: (project.storyBible.characters || []).length },
-    { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible', count: (project.storyBible.locations || []).length },
-    { id: 'factions', label: 'Factions', icon: Users, tab: 'bible', count: (project.storyBible.factions || []).length },
-    { id: 'lore', label: 'World Lore', icon: BookOpen, tab: 'bible', count: (project.storyBible.lore || []).length },
-    { id: 'powerSystems', label: 'Magic & Power Systems', icon: Sparkles, tab: 'bible', count: (project.storyBible.powerSystems || []).length },
+    { id: 'characters', label: 'Characters', icon: User, tab: 'bible', count: (project.storyBible.characters || []).filter((i: any) => !i.isFolder).length },
+    { id: 'locations', label: 'Locations', icon: MapPin, tab: 'bible', count: (project.storyBible.locations || []).filter((i: any) => !i.isFolder).length },
+    { id: 'factions', label: 'Factions', icon: Users, tab: 'bible', count: (project.storyBible.factions || []).filter((i: any) => !i.isFolder).length },
+    { id: 'lore', label: 'World Lore', icon: BookOpen, tab: 'bible', count: (project.storyBible.lore || []).filter((i: any) => !i.isFolder).length },
+    { id: 'powerSystems', label: 'Magic & Power Systems', icon: Sparkles, tab: 'bible', count: (project.storyBible.powerSystems || []).filter((i: any) => !i.isFolder).length },
     { id: 'canon', label: 'Canon Ledger', icon: Database, tab: 'canon', count: project.continuityFacts.length },
     { id: 'plots', label: 'Plot Threads', icon: GitCommit, tab: 'plots', count: project.plotThreads.length },
     { id: 'notes', label: 'Scrapbook Notes', icon: FileText, tab: 'notes', count: project.notes.length },
@@ -59,18 +63,38 @@ export const ReferenceLibraryModal: React.FC = () => {
     ? 'Magic & Power Systems'
     : activeBibleCategory.charAt(0).toUpperCase() + activeBibleCategory.slice(1);
 
-  const createBibleItem = () => {
+  const createBibleItem = (folderId: string | null = null) => {
+    const baseData = { folderId: folderId || null };
     if (activeBibleCategory === 'characters') {
-      addBibleItem('characters', { name: 'New Character', age: '', role: '', appearance: '', personality: '', goals: '', fears: '', keyFacts: '', continuityNotes: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
+      addBibleItem('characters', { ...baseData, name: 'New Character', age: '', role: '', appearance: '', personality: '', goals: '', fears: '', keyFacts: '', continuityNotes: '', relationships: '', abilities: '', speechStyle: '', history: '', injuries: '', secrets: '', developmentArc: '' });
     } else if (activeBibleCategory === 'locations') {
-      addBibleItem('locations', { name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
+      addBibleItem('locations', { ...baseData, name: 'New Location', description: '', culture: '', weather: '', history: '', landmarks: '', connectedLocations: '' });
     } else if (activeBibleCategory === 'factions') {
-      addBibleItem('factions', { name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
+      addBibleItem('factions', { ...baseData, name: 'New Faction', leader: '', members: '', beliefs: '', allies: '', enemies: '', resources: '' });
     } else if (activeBibleCategory === 'lore') {
-      addBibleItem('lore', { name: 'New Lore Entry', era: '', description: '', significance: '', history: '' });
+      addBibleItem('lore', { ...baseData, name: 'New Lore Entry', era: '', description: '', significance: '', history: '' });
     } else {
-      addBibleItem('powerSystems', { name: 'New Power System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
+      addBibleItem('powerSystems', { ...baseData, name: 'New Power System', rules: '', limitations: '', costs: '', exceptions: '', examples: '' });
     }
+  };
+
+  const handleCreateFolder = async () => {
+    await addFolder(activeBibleCategory, `New Folder`);
+  };
+
+  const toggleFolderCollapse = (folderId: string) => {
+    setCollapsedFolders(prev => ({ ...prev, [folderId]: !prev[folderId] }));
+  };
+
+  const startEditingFolder = (folder: any) => {
+    setEditingFolderId(folder.id);
+  };
+
+  const saveFolderRename = async (folderId: string, newName: string) => {
+    if (newName.trim()) {
+      await updateFolder(activeBibleCategory, folderId, newName.trim());
+    }
+    setEditingFolderId(null);
   };
 
   // Currently selected entity for relational inspector
@@ -86,9 +110,39 @@ export const ReferenceLibraryModal: React.FC = () => {
     ? project.scenes.filter(s => s.metadata?.characters?.includes(activeEntity.name) || s.metadata?.location === activeEntity.name)
     : [];
 
-  const itemsList = activeLeftTab === 'bible' 
-    ? (project.storyBible[activeBibleCategory] || []).filter((item: any) => item.name.toLowerCase().includes(searchQuery.toLowerCase()))
-    : [];
+  const rawList = activeLeftTab === 'bible' ? (project.storyBible[activeBibleCategory] || []) : [];
+  const folders = rawList.filter((i: any) => i.isFolder && i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const allItems = rawList.filter((i: any) => !i.isFolder && i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+  const rootItems = allItems.filter((i: any) => !i.folderId);
+
+  const renderItemCard = (item: any) => {
+    const isItemSelected = item.id === activeBibleItemId;
+
+    return (
+      <div 
+        key={item.id} 
+        className={`ref-item-card ${isItemSelected ? 'active' : ''}`}
+        onClick={() => setBibleItemId(item.id)}
+      >
+        <div className="ref-item-card-header">
+          <span className="ref-item-name">{item.name}</span>
+          <button 
+            type="button"
+            className="btn-icon danger-hover"
+            onClick={(e) => {
+              e.stopPropagation();
+              setPendingDelete({ category: activeBibleCategory, id: item.id, name: item.name, isFolder: false });
+            }}
+            title="Delete Item"
+          >
+            <Trash2 size={13} />
+          </button>
+        </div>
+        {item.role && <span className="ref-item-tag">{item.role}</span>}
+        {item.culture && <span className="ref-item-tag">{item.culture}</span>}
+      </div>
+    );
+  };
 
   return (
     <div className="ref-modal-overlay" onClick={closeReferenceModal}>
@@ -154,8 +208,8 @@ export const ReferenceLibraryModal: React.FC = () => {
               <div className="ref-bible-split-workspace">
                 {/* Master Items List */}
                 <div className="ref-items-column">
-                  <div className="ref-items-toolbar">
-                    <div className="ref-search-box">
+                  <div className="ref-items-toolbar" style={{ gap: 6 }}>
+                    <div className="ref-search-box" style={{ flex: 1 }}>
                       <Search size={14} />
                       <input 
                         type="text" 
@@ -164,53 +218,162 @@ export const ReferenceLibraryModal: React.FC = () => {
                         onChange={e => setSearchQuery(e.target.value)}
                       />
                     </div>
-                    <button type="button" className="btn btn-primary btn-sm" onClick={createBibleItem}>
+                    <button type="button" className="btn btn-secondary btn-sm" onClick={handleCreateFolder} title="Create Folder" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <FolderPlus size={14} /> Folder
+                    </button>
+                    <button type="button" className="btn btn-primary btn-sm" onClick={() => createBibleItem(null)} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                       <Plus size={14} /> Add
                     </button>
                   </div>
 
                   <div className="ref-items-scroll">
-                    {itemsList.map((item: any) => {
-                      const isItemSelected = item.id === activeBibleItemId;
+                    {/* Folders List */}
+                    {folders.map((folder: any) => {
+                      const isCollapsed = collapsedFolders[folder.id] ?? false;
+                      const folderChildItems = allItems.filter((i: any) => i.folderId === folder.id);
+                      const isEditing = editingFolderId === folder.id;
+
                       return (
                         <div 
-                          key={item.id} 
-                          className={`ref-item-card ${isItemSelected ? 'active' : ''}`}
-                          onClick={() => setBibleItemId(item.id)}
+                          key={folder.id} 
+                          className="ref-folder-card" 
+                          style={{ 
+                            marginBottom: 8, 
+                            background: 'var(--bg-secondary)', 
+                            borderRadius: 6, 
+                            border: '1px solid var(--border-color)', 
+                            overflow: 'hidden'
+                          }}
                         >
-                          <div className="ref-item-card-header">
-                            <span className="ref-item-name">{item.name}</span>
-                            <button 
-                              type="button"
-                              className="btn-icon danger-hover"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setPendingDelete({ category: activeBibleCategory, id: item.id, name: item.name });
-                              }}
-                              title="Delete Item"
-                            >
-                              <Trash2 size={13} />
-                            </button>
+                          {/* Folder Header */}
+                          <div 
+                            style={{ 
+                              padding: '6px 10px', 
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              justifyContent: 'space-between',
+                              cursor: 'pointer',
+                              backgroundColor: 'var(--bg-tertiary)',
+                              borderBottom: isCollapsed ? 'none' : '1px solid var(--border-color)',
+                              userSelect: 'none'
+                            }}
+                            onClick={() => toggleFolderCollapse(folder.id)}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                              {isCollapsed ? <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} /> : <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />}
+                              {isCollapsed ? <Folder size={15} style={{ color: 'var(--accent-purple)' }} /> : <FolderOpen size={15} style={{ color: 'var(--accent-purple)' }} />}
+                              
+                              {isEditing ? (
+                                <input
+                                  type="text"
+                                  className="form-input"
+                                  defaultValue={folder.name}
+                                  onKeyDown={e => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault();
+                                      saveFolderRename(folder.id, e.currentTarget.value);
+                                    }
+                                    if (e.key === 'Escape') {
+                                      e.preventDefault();
+                                      setEditingFolderId(null);
+                                    }
+                                  }}
+                                  onBlur={e => saveFolderRename(folder.id, e.target.value)}
+                                  onClick={e => e.stopPropagation()}
+                                  onMouseDown={e => e.stopPropagation()}
+                                  autoFocus
+                                  style={{ padding: '2px 6px', height: 24, fontSize: 12, width: '100%', maxWidth: 200 }}
+                                />
+                              ) : (
+                                <span style={{ fontWeight: 600, fontSize: 12, color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                                  {folder.name}
+                                </span>
+                              )}
+                              <span style={{ fontSize: 10, color: 'var(--text-muted)', background: 'var(--bg-primary)', padding: '1px 5px', borderRadius: 8 }}>
+                                {folderChildItems.length}
+                              </span>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }} onClick={e => e.stopPropagation()}>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                style={{ padding: 2 }}
+                                onClick={() => createBibleItem(folder.id)}
+                                title="Add item to this folder"
+                              >
+                                <Plus size={13} style={{ color: 'var(--accent-purple)' }} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon"
+                                style={{ padding: 2 }}
+                                onClick={() => startEditingFolder(folder)}
+                                title="Rename folder"
+                              >
+                                <Edit2 size={12} />
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-icon danger-hover"
+                                style={{ padding: 2 }}
+                                onClick={() => setPendingDelete({ category: activeBibleCategory, id: folder.id, name: folder.name, isFolder: true })}
+                                title="Delete folder"
+                              >
+                                <Trash2 size={12} />
+                              </button>
+                            </div>
                           </div>
-                          {item.role && <span className="ref-item-tag">{item.role}</span>}
-                          {item.culture && <span className="ref-item-tag">{item.culture}</span>}
+
+                          {/* Folder Child Items */}
+                          {!isCollapsed && (
+                            <div style={{ 
+                              padding: '8px 8px 8px 12px', 
+                              display: 'flex', 
+                              flexDirection: 'column', 
+                              gap: 6,
+                              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                              borderTop: '1px solid var(--border-color)'
+                            }}>
+                              {folderChildItems.map(item => renderItemCard(item))}
+                              {folderChildItems.length === 0 && (
+                                <div style={{ padding: '8px 12px', fontSize: 11, color: 'var(--text-muted)', fontStyle: 'italic', textAlign: 'center' }}>
+                                  No items in this folder. Click + to add.
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       );
                     })}
-                    {itemsList.length === 0 && (
+
+                    {/* Uncategorized / Root Items */}
+                    {folders.length > 0 && rootItems.length > 0 && (
+                      <div style={{ padding: '4px 6px', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', letterSpacing: '0.05em', marginTop: 8 }}>
+                        Uncategorized Items
+                      </div>
+                    )}
+                    {rootItems.map(item => renderItemCard(item))}
+
+                    {folders.length === 0 && allItems.length === 0 && (
                       <div className="ref-empty-state">
                         <User size={24} />
                         <span>No {activeCategoryLabel.toLowerCase()} found.</span>
-                        <button type="button" className="btn btn-primary btn-sm" onClick={createBibleItem}>
-                          <Plus size={14} /> Create {activeCategoryLabel}
-                        </button>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button type="button" className="btn btn-secondary btn-sm" onClick={handleCreateFolder}>
+                            <FolderPlus size={14} /> New Folder
+                          </button>
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => createBibleItem(null)}>
+                            <Plus size={14} /> Create {activeCategoryLabel}
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
 
                   {pendingDelete && (
                     <div className="ref-delete-confirm">
-                      <span>Delete <strong>{pendingDelete.name}</strong>?</span>
+                      <span>Delete {pendingDelete.isFolder ? 'folder' : ''} <strong>{pendingDelete.name}</strong>?</span>
                       <div className="ref-delete-actions">
                         <button type="button" className="btn btn-secondary btn-sm" onClick={() => setPendingDelete(null)}>Cancel</button>
                         <button 

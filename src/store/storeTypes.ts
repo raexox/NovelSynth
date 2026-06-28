@@ -99,6 +99,8 @@ export interface StoreContextType {
   updateBibleItem: (category: BibleCategory, item: any) => void;
   addBibleItem: (category: BibleCategory, item: any) => void;
   deleteBibleItem: (category: BibleCategory, id: string) => void;
+  addFolder: (category: BibleCategory, name: string) => Promise<void>;
+  updateFolder: (category: BibleCategory, folderId: string, name: string) => Promise<void>;
   addContinuityFact: (fact: Omit<ContinuityFact, 'id' | 'createdAt'>) => Promise<ContinuityFact | null>;
   updateContinuityFact: (id: string, updates: Partial<ContinuityFact>) => Promise<void>;
   deleteContinuityFact: (id: string) => Promise<void>;

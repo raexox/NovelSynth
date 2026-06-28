@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useStore } from '../../store';
 import type { Character, Location, Faction, PowerSystem } from '../../types';
-import { ArrowLeft, User, MapPin, Sparkles, BookOpen, Users, FileText, Share2, Tag, Camera, X } from 'lucide-react';
+import { ArrowLeft, User, MapPin, Sparkles, BookOpen, Users, FileText, Share2, Tag, Camera, X, Folder } from 'lucide-react';
 
 export const BibleItemEditor: React.FC = () => {
   const {
@@ -70,13 +70,14 @@ export const BibleItemEditor: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  if (!item) {
+  if (!item || item.isFolder) {
     return (
-      <div style={{ padding: 16, textAlign: 'center', color: 'var(--text-muted)' }}>
-        Item not found.
-        <button type="button" className="btn btn-secondary" style={{ marginTop: 8 }} onClick={() => setBibleItemId(null)}>
-          Close Inspector
-        </button>
+      <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+        <Folder size={40} style={{ marginBottom: 12, opacity: 0.5, color: 'var(--accent-purple)' }} />
+        <h4 style={{ margin: '0 0 6px 0', color: 'var(--text-primary)' }}>Folder Selected</h4>
+        <p style={{ margin: 0, fontSize: 12, maxWidth: 300 }}>
+          Expand or drag entries into this folder on the left, or select an entry to view and edit its detailed dossier.
+        </p>
       </div>
     );
   }
@@ -94,6 +95,8 @@ export const BibleItemEditor: React.FC = () => {
   const itemFacts = project.continuityFacts
     .filter(fact => fact.entityId === item.id || fact.entityName.toLowerCase() === item.name.toLowerCase())
     .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+  const categoryFolders = (project.storyBible[activeBibleCategory] || []).filter((i: any) => i.isFolder);
 
   return (
     <div className="bible-editor" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -126,15 +129,40 @@ export const BibleItemEditor: React.FC = () => {
         borderRadius: 8, 
         padding: 12,
         display: 'flex',
-        justify: 'space-between',
+        justifyContent: 'space-between',
         alignItems: 'center',
         position: 'relative',
         gap: 12
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--accent-purple)', fontWeight: 600 }}>
-            <CategoryIcon size={12} />
-            <span>{categoryLabel}</span>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10.5, color: 'var(--accent-purple)', fontWeight: 600 }}>
+              <CategoryIcon size={12} />
+              <span>{categoryLabel}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <Folder size={11} style={{ color: 'var(--text-muted)' }} />
+              <select
+                value={item.folderId || ''}
+                onChange={e => updateBibleItem(activeBibleCategory, { ...item, folderId: e.target.value || null })}
+                style={{ 
+                  fontSize: 11, 
+                  padding: '1px 4px', 
+                  height: 20, 
+                  background: 'var(--bg-secondary)', 
+                  border: '1px solid var(--border-color)', 
+                  borderRadius: 4, 
+                  color: 'var(--text-secondary)',
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+              >
+                <option value="">No Folder (Root)</option>
+                {categoryFolders.map((f: any) => (
+                  <option key={f.id} value={f.id}>{f.name}</option>
+                ))}
+              </select>
+            </div>
           </div>
           
           {/* Title Editor */}

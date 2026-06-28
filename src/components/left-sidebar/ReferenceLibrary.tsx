@@ -161,7 +161,7 @@ export const ReferenceLibrary: React.FC = () => {
             {/* Collapsible Accordion Sections */}
             {bCategories.map(catObj => {
               const items = (project.storyBible[catObj.id] || []).filter((item: any) => 
-                !searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase()) || getItemSnippet(item, catObj.id).toLowerCase().includes(searchQuery.toLowerCase())
+                !item.isFolder && (!searchQuery || item.name.toLowerCase().includes(searchQuery.toLowerCase()) || getItemSnippet(item, catObj.id).toLowerCase().includes(searchQuery.toLowerCase()))
               );
               const isExpanded = expandedSections[catObj.id] ?? true;
               const IconComp = catObj.icon;

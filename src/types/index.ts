@@ -42,9 +42,14 @@ export interface Chapter {
 }
 
 // Story Bible Types
-export interface Character {
+export interface BaseBibleItem {
   id: string;
   name: string;
+  folderId?: string | null;
+  isFolder?: boolean;
+}
+
+export interface Character extends BaseBibleItem {
   age?: string;
   role?: string;
   appearance: string;
@@ -62,9 +67,7 @@ export interface Character {
   developmentArc: string;
 }
 
-export interface Location {
-  id: string;
-  name: string;
+export interface Location extends BaseBibleItem {
   description: string;
   culture: string;
   weather: string;
@@ -73,9 +76,7 @@ export interface Location {
   connectedLocations: string;
 }
 
-export interface Faction {
-  id: string;
-  name: string;
+export interface Faction extends BaseBibleItem {
   leader: string;
   members: string;
   beliefs: string;
@@ -84,9 +85,7 @@ export interface Faction {
   resources: string;
 }
 
-export interface PowerSystem {
-  id: string;
-  name: string;
+export interface PowerSystem extends BaseBibleItem {
   rules: string;
   limitations: string;
   costs: string;
@@ -94,9 +93,7 @@ export interface PowerSystem {
   examples: string;
 }
 
-export interface LoreEntry {
-  id: string;
-  name: string;
+export interface LoreEntry extends BaseBibleItem {
   era?: string;
   description?: string;
   significance?: string;
