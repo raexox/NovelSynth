@@ -161,13 +161,9 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     chatDatabaseService.fetchConversations(activeBookId).then(fetchedConvs => {
       setConversations(fetchedConvs);
-      if (fetchedConvs.length > 0) {
-        setActiveConversationId(fetchedConvs[0].id);
-        setChatMessages(fetchedConvs[0].messages);
-      } else {
-        setActiveConversationId(null);
-        setChatMessages([]);
-      }
+      // Always start on a fresh AI chat session upon refresh or book load
+      setActiveConversationId(null);
+      setChatMessages([]);
     });
   }, [activeBookId]);
 
