@@ -154,11 +154,11 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
         {(actionType === 'create_lore' || actionType === 'add_lore') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
             {(action as any).era && <div><strong>Era:</strong> {(action as any).era}</div>}
-            {((action as any).description || action.rules) && (
+            {((action as any).description || action.rules || (action as any).history) && (
               <div>
                 <strong>Overview / History:</strong>
-                <div style={{ maxHeight: 80, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
-                  {(action as any).description || action.rules}
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {(action as any).description || action.rules || (action as any).history}
                 </div>
               </div>
             )}
@@ -167,14 +167,16 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
 
         {(actionType === 'create_power_system' || actionType === 'create_magic' || actionType === 'add_power_system' || actionType === 'add_magic') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
-            {action.rules && (
+            {(action.rules || action.description) && (
               <div>
                 <strong>Rules & Mechanics:</strong>
-                <div style={{ maxHeight: 80, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
-                  {action.rules}
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.rules || action.description}
                 </div>
               </div>
             )}
+            {(action as any).limitations && <div><strong>Limitations:</strong> {(action as any).limitations}</div>}
+            {(action as any).costs && <div><strong>Costs:</strong> {(action as any).costs}</div>}
           </div>
         )}
 
@@ -182,7 +184,16 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
         {(actionType === 'create_faction' || actionType === 'add_faction') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
             {action.leader && <div><strong>Leader:</strong> {action.leader}</div>}
+            {(action as any).members && <div><strong>Members:</strong> {(action as any).members}</div>}
             {action.beliefs && <div><strong>Beliefs & Ideology:</strong> {action.beliefs}</div>}
+            {action.description && (
+              <div>
+                <strong>Description:</strong>
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.description}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -191,15 +202,33 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
             {action.age && <div><strong>Age:</strong> {action.age}</div>}
             {action.role && <div><strong>Role:</strong> {action.role}</div>}
+            {action.appearance && <div><strong>Appearance:</strong> {action.appearance}</div>}
             {action.personality && <div><strong>Personality:</strong> {action.personality}</div>}
             {action.goals && <div><strong>Goals:</strong> {action.goals}</div>}
+            {(action as any).fears && <div><strong>Fears:</strong> {(action as any).fears}</div>}
+            {(action.description || (action as any).history || (action as any).backstory) && (
+              <div>
+                <strong>Description / Backstory:</strong>
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.description || (action as any).history || (action as any).backstory}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {/* Location details */}
         {(actionType === 'create_location' || actionType === 'add_location') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
-            {action.description && <div><strong>Description:</strong> {action.description}</div>}
+            {action.description && (
+              <div>
+                <strong>Description:</strong>
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.description}
+                </div>
+              </div>
+            )}
+            {(action as any).culture && <div><strong>Culture:</strong> {(action as any).culture}</div>}
             {action.landmarks && <div><strong>Landmarks:</strong> {action.landmarks}</div>}
           </div>
         )}
@@ -207,7 +236,28 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
         {/* Plot thread details */}
         {(actionType === 'create_plot_thread' || actionType === 'add_plot_thread') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
-            {action.description && <div><strong>Description:</strong> {action.description}</div>}
+            {action.description && (
+              <div>
+                <strong>Description:</strong>
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.description}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Note details */}
+        {(actionType === 'add_note' || actionType === 'create_note') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
+            {(action.content || action.description) && (
+              <div>
+                <strong>Content / Note:</strong>
+                <div style={{ maxHeight: 90, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '6px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.content || action.description}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
