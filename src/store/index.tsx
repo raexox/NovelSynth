@@ -347,6 +347,7 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         const charName = action.name || 'New Character';
         await addBibleItem('characters', {
           name: charName,
+          age: action.age ? String(action.age) : '',
           role: action.role || 'Supporting Character',
           personality: action.personality || '',
           appearance: action.appearance || '',

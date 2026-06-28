@@ -12,11 +12,13 @@ export interface NormalizedAiAction {
   location?: string;
   pov?: string;
   name?: string;
+  age?: string;
   role?: string;
   personality?: string;
   appearance?: string;
   goals?: string;
   history?: string;
+  secrets?: string;
   description?: string;
   landmarks?: string;
   title?: string;
@@ -105,6 +107,13 @@ export function parseAndNormalizeAiAction(
     if (!action.name || action.name === 'Character Name' || action.name === 'New Character') {
       const nameMatch = rawContent.match(/(?:Name|Character):\s*\*?\*?([A-Za-z0-9\s]+)\*?\*?/i) || userPrompt.match(/(?:named|name)\s+([A-Z][a-z]+)/i);
       if (nameMatch) action.name = nameMatch[1].trim();
+    }
+    if (!action.age) {
+      const ageMatch = rawContent.match(/(?:Age|Years old):\s*\*?\*?([A-Za-z0-9\s]+)\*?\*?/i) || userPrompt.match(/(\d+)\s*(?:years old|year old|yo)/i);
+      if (ageMatch) {
+        const val = ageMatch[1].trim();
+        action.age = /^\d+$/.test(val) ? `${val} years old` : val;
+      }
     }
     if (!action.role || action.role.includes('Protagonist / Antagonist')) {
       const roleMatch = rawContent.match(/Role:\s*\*?\*?([A-Za-z0-9\s\(\)]+)\*?\*?/i);

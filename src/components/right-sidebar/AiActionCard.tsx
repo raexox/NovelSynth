@@ -130,6 +130,7 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
         {/* Character details */}
         {(actionType === 'create_character' || actionType === 'add_character') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
+            {action.age && <div><strong>Age:</strong> {action.age}</div>}
             {action.role && <div><strong>Role:</strong> {action.role}</div>}
             {action.personality && <div><strong>Personality:</strong> {action.personality}</div>}
             {action.goals && <div><strong>Goals:</strong> {action.goals}</div>}

@@ -126,6 +126,7 @@ For Creating Story Bible Characters (USE THIS WHEN AUTHOR ASKS TO ADD/CREATE A C
 {
   "type": "create_character",
   "name": "Exact Character Name",
+  "age": "Character age (e.g. 17 years old)",
   "role": "Protagonist / Antagonist / Supporting",
   "personality": "Brief traits...",
   "appearance": "Physical description...",
