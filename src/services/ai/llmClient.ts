@@ -10,7 +10,7 @@ export async function callLLM(
   systemInstruction?: string,
   expectJson: boolean = true
 ): Promise<any> {
-  const { apiKey, model, provider, aiTemperature } = settings;
+  const { apiKey, model, provider, aiTemperature, maxTokens } = settings;
 
   if (!apiKey || !apiKey.trim()) {
     throw new Error('API key is missing. Please configure your API key in the settings cog in the header.');
@@ -25,7 +25,8 @@ export async function callLLM(
       const url = `https://generativelanguage.googleapis.com/v1beta/models/${selectedModel}:generateContent?key=${apiKey}`;
       
       const generationConfig: any = {
-        temperature: aiTemperature
+        temperature: aiTemperature,
+        maxOutputTokens: maxTokens || 8192
       };
       if (expectJson) {
         generationConfig.responseMimeType = 'application/json';
@@ -97,6 +98,7 @@ export async function callLLM(
       const requestBody: any = {
         model: selectedModel,
         temperature: aiTemperature,
+        max_tokens: maxTokens || 8192,
         messages
       };
       if (expectJson) {

@@ -126,7 +126,8 @@ ${contextBlock}
 Instructions:
 1. Brainstorm creative ideas, give advice, or perform rewrites as requested.
 2. If asked what happens in a scene or to summarize a scene, provide an accurate summary based strictly on the provided manuscript content and recorded memories.
-3. If asked to rewrite, format the rewritten version clearly in clean Markdown so the user can easily review and copy it.
+3. CRITICAL REWRITE RULE (PRESERVE FULL SCENE LENGTH): When asked to rewrite, revise, or expand a scene or take advice from another source, write out the COMPLETE, full-length prose scene. Match or exceed the word count and narrative depth of the original text. DO NOT summarize, condense, or abbreviate scenes unless the author explicitly asks you to shorten them.
+4. If asked to rewrite, format the rewritten version clearly in clean Markdown so the user can easily review and copy it.
 4. PROPOSED ACTIONS (CRITICAL RULE: Match the action type to author request):
 - MULTITASKING / SEPARATE ENTRIES: When the author asks to add multi-part lore, world history drafts with multiple eras, or multiple characters/locations/factions at once, DO NOT lump everything into one giant entry or write meta-language like "Below is the JSON action block"! Output SEPARATE \`\`\`json:action\`\`\` blocks at the end of your response for EACH distinct era, topic, or entity (e.g. one for "The Primitive Age", one for "The First Miracle", etc.) so the author can add each one cleanly.
 - If the author asks you to create/add a character, YOU MUST USE 'type': 'create_character'.

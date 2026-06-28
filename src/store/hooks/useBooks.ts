@@ -404,7 +404,8 @@ export const useBooks = (
         authorName: '',
         seriesName: '',
         seriesIndex: '',
-        labels: []
+        labels: [],
+        maxTokens: 8192
       }
     });
   };

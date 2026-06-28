@@ -26,6 +26,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({ isOpen, on
   const [model, setModel] = useState(project.settings.model || 'gemini-1.5-flash');
   const [provider, setProvider] = useState<'gemini' | 'openai' | 'openrouter'>(project.settings.provider || 'gemini');
   const [aiTemp, setAiTemp] = useState(project.settings.aiTemperature || 0.7);
+  const [maxTokens, setMaxTokens] = useState<number>(project.settings.maxTokens || 8192);
   const [proseTense, setProseTense] = useState<'Past' | 'Present'>(project.settings.proseTense || 'Past');
   const [proseLanguage, setProseLanguage] = useState(project.settings.proseLanguage || 'US English');
   const [povType, setPovType] = useState(project.settings.povType || '3rd Person (Limited)');
@@ -50,6 +51,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({ isOpen, on
     setModel(project.settings.model || 'gemini-1.5-flash');
     setProvider(project.settings.provider || 'gemini');
     setAiTemp(project.settings.aiTemperature || 0.7);
+    setMaxTokens(project.settings.maxTokens || 8192);
     setProseTense(project.settings.proseTense || 'Past');
     setProseLanguage(project.settings.proseLanguage || 'US English');
     setPovType(project.settings.povType || '3rd Person (Limited)');
@@ -67,6 +69,7 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({ isOpen, on
     project.settings.model,
     project.settings.provider,
     project.settings.aiTemperature,
+    project.settings.maxTokens,
     project.settings.proseTense,
     project.settings.proseLanguage,
     project.settings.povType,
@@ -120,7 +123,8 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({ isOpen, on
       apiKey: apiKey.trim(),
       model: model.trim(),
       provider,
-      aiTemperature: aiTemp
+      aiTemperature: aiTemp,
+      maxTokens: Number(maxTokens) || 8192
     };
 
     await updateUserSettings(aiSettings);
@@ -622,6 +626,19 @@ export const BookSettingsModal: React.FC<BookSettingsModalProps> = ({ isOpen, on
                       />
                       <span>{aiTemp}</span>
                     </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Max Output Tokens</label>
+                    <select
+                      className="form-select"
+                      value={maxTokens}
+                      onChange={e => setMaxTokens(Number(e.target.value))}
+                    >
+                      <option value={4096}>4,096 Tokens (~3,000 words)</option>
+                      <option value={8192}>8,192 Tokens (~6,000 words)</option>
+                      <option value={16384}>16,384 Tokens (~12,000 words)</option>
+                    </select>
                   </div>
                 </div>
 

@@ -240,5 +240,6 @@ export interface ProjectState {
     seriesName?: string;
     seriesIndex?: string;
     labels?: string[];
+    maxTokens?: number;
   };
 }
