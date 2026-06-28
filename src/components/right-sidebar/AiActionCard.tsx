@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useStore } from '../../store';
-import { Sparkles, Zap, Check, FileText, Layers, MapPin, User, GitBranch, BookOpen } from 'lucide-react';
+import { Sparkles, Zap, Check, FileText, Layers, MapPin, User, Users, GitBranch, BookOpen } from 'lucide-react';
 
 interface AiActionCardProps {
   action: {
@@ -17,6 +17,9 @@ interface AiActionCardProps {
     goals?: string;
     description?: string;
     landmarks?: string;
+    rules?: string;
+    leader?: string;
+    beliefs?: string;
     title?: string;
     threadType?: string;
     content?: string;
@@ -60,6 +63,18 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
     applyLabel = '⚡ Click to Add to Story Bible';
     appliedLabel = '✓ Added to Story Bible';
     icon = <MapPin size={13} />;
+  } else if (actionType === 'create_power_system' || actionType === 'create_lore' || actionType === 'add_power_system' || actionType === 'add_lore') {
+    title = 'New Lore & Magic Entry';
+    badgeLabel = action.name || 'Lore Bible';
+    applyLabel = '⚡ Click to Add to Lore Bible';
+    appliedLabel = '✓ Added to Lore Bible';
+    icon = <Sparkles size={13} />;
+  } else if (actionType === 'create_faction' || actionType === 'add_faction') {
+    title = 'New Faction Profile';
+    badgeLabel = action.name || 'Faction';
+    applyLabel = '⚡ Click to Add to Story Bible';
+    appliedLabel = '✓ Added to Story Bible';
+    icon = <Users size={13} />;
   } else if (actionType === 'create_plot_thread' || actionType === 'add_plot_thread') {
     title = 'New Plot Thread';
     badgeLabel = action.title || 'Plot Thread';
@@ -124,6 +139,28 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
                 <li key={idx} style={{ marginBottom: 2 }}>{beat}</li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {/* Lore / Power System details */}
+        {(actionType === 'create_power_system' || actionType === 'create_lore' || actionType === 'add_power_system' || actionType === 'add_lore') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
+            {action.rules && (
+              <div>
+                <strong>Content / Rules:</strong>
+                <div style={{ maxHeight: 80, overflowY: 'auto', backgroundColor: 'rgba(0,0,0,0.2)', padding: '4px 8px', borderRadius: 4, marginTop: 2, fontStyle: 'italic', whiteSpace: 'pre-wrap' }}>
+                  {action.rules}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Faction details */}
+        {(actionType === 'create_faction' || actionType === 'add_faction') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 11.5 }}>
+            {action.leader && <div><strong>Leader:</strong> {action.leader}</div>}
+            {action.beliefs && <div><strong>Beliefs & Ideology:</strong> {action.beliefs}</div>}
           </div>
         )}
 

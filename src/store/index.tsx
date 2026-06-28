@@ -388,6 +388,43 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         return true;
       }
 
+      if (type === 'create_power_system' || type === 'create_lore' || type === 'add_power_system' || type === 'add_lore') {
+        const sysName = action.name || 'World History & Lore';
+        await addBibleItem('powerSystems', {
+          name: sysName,
+          rules: action.rules || action.description || action.history || action.content || '',
+          limitations: action.limitations || '',
+          costs: action.costs || '',
+          exceptions: action.exceptions || '',
+          examples: action.examples || ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Lore Entry Created!',
+          message: `Added "${sysName}" to your Lore & Magic Bible.`
+        });
+        return true;
+      }
+
+      if (type === 'create_faction' || type === 'add_faction') {
+        const facName = action.name || 'New Faction';
+        await addBibleItem('factions', {
+          name: facName,
+          leader: action.leader || '',
+          members: action.members || '',
+          beliefs: action.beliefs || action.description || '',
+          allies: action.allies || '',
+          enemies: action.enemies || '',
+          resources: action.resources || ''
+        });
+        notify({
+          tone: 'success',
+          title: 'Faction Created!',
+          message: `Added "${facName}" to your Reference Library.`
+        });
+        return true;
+      }
+
       if (type === 'create_plot_thread' || type === 'add_plot_thread') {
         const threadTitle = action.title || 'New Plot Thread';
         await addPlotThread({

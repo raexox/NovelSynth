@@ -212,11 +212,11 @@ export const AiCoWriter: React.FC = () => {
             }
 
             // Extract & normalize action payload
-            let actionData: any = null;
+            let actionList: any[] = [];
             let displayContent = msg.content;
             if (!isUser) {
               const parsed = parseAndNormalizeAiAction(msg.content, userPrompt);
-              actionData = parsed.action;
+              actionList = parsed.actions;
               displayContent = parsed.cleanContent;
             }
 
@@ -244,9 +244,13 @@ export const AiCoWriter: React.FC = () => {
                   dangerouslySetInnerHTML={{ __html: parseChatMarkdown(displayContent) }}
                 />
 
-                {/* Proposed Action Card */}
-                {!isUser && actionData && (
-                  <AiActionCard action={actionData} />
+                {/* Proposed Action Cards */}
+                {!isUser && actionList && actionList.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {actionList.map((act, aIdx) => (
+                      <AiActionCard key={aIdx} action={act} />
+                    ))}
+                  </div>
                 )}
                 
                 {/* Replace selection helper */}

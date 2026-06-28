@@ -5,7 +5,7 @@
  */
 
 export interface NormalizedAiAction {
-  type: 'create_character' | 'create_location' | 'create_plot_thread' | 'add_note' | 'update_scene_outline';
+  type: 'create_character' | 'create_location' | 'create_faction' | 'create_power_system' | 'create_lore' | 'create_plot_thread' | 'add_note' | 'update_scene_outline';
   targetScene?: string;
   summary?: string;
   addBeats?: string[];
@@ -21,6 +21,17 @@ export interface NormalizedAiAction {
   secrets?: string;
   description?: string;
   landmarks?: string;
+  rules?: string;
+  limitations?: string;
+  costs?: string;
+  exceptions?: string;
+  examples?: string;
+  leader?: string;
+  beliefs?: string;
+  members?: string;
+  allies?: string;
+  enemies?: string;
+  resources?: string;
   title?: string;
   threadType?: string;
   content?: string;
@@ -29,32 +40,121 @@ export interface NormalizedAiAction {
 export function parseAndNormalizeAiAction(
   rawContent: string,
   userPrompt: string = ''
-): { cleanContent: string; action: NormalizedAiAction | null } {
-  if (!rawContent) return { cleanContent: '', action: null };
+): { cleanContent: string; action: NormalizedAiAction | null; actions: NormalizedAiAction[] } {
+  if (!rawContent) return { cleanContent: '', action: null, actions: [] };
 
-  let action: any = null;
+  const rawActions: any[] = [];
   let cleanContent = rawContent;
 
-  const actionRegex = /```json:action\n([\s\S]*?)\n```/i;
-  const match = rawContent.match(actionRegex);
+  // Global regex to match any json action blocks (e.g., ```json:action or ```json)
+  const blockRegex = /```(?:json:action|json)?\s*\n([\s\S]*?)\n```/gi;
+  let blockMatch;
 
-  if (match && match[1]) {
+  while ((blockMatch = blockRegex.exec(rawContent)) !== null) {
+    const jsonStr = blockMatch[1].trim();
     try {
-      action = JSON.parse(match[1]);
-      cleanContent = rawContent.replace(actionRegex, '').trim();
+      const parsed = JSON.parse(jsonStr);
+      if (Array.isArray(parsed)) {
+        rawActions.push(...parsed);
+      } else if (parsed && typeof parsed === 'object') {
+        rawActions.push(parsed);
+      }
     } catch (e) {
-      console.warn('Failed to parse json:action block', e);
+      // Ignore invalid JSON blocks or unrelated code snippets
     }
   }
+
+  // Strip all matching json code blocks from display content
+  cleanContent = rawContent.replace(blockRegex, '').trim();
+
+  // Strip common AI intro meta phrases if left floating in cleanContent
+  cleanContent = cleanContent
+    .replace(/^(?:Below|Here)\s+is\s+the\s+(?:proposed\s+)?JSON\s+action\s+block[\s\S]*?\n\n?/i, '')
+    .replace(/^The content you provided will be added to the lore bible[\s\S]*?\n\n?/i, '')
+    .trim();
 
   const userLower = userPrompt.toLowerCase();
   const rawLower = rawContent.toLowerCase();
 
-  // If no JSON block was found, check if user explicitly asked to create a character or location
-  if (!action) {
+  // Helper function to normalize an individual action object
+  const normalizeSingleAction = (actObj: any): NormalizedAiAction => {
+    const action = { ...actObj };
+    let inferredType = String(action.type || '').toLowerCase();
+
+    const isPowerSystemIntent = 
+      userLower.includes('lore bible') ||
+      userLower.includes('world history') ||
+      userLower.includes('magic system') ||
+      userLower.includes('power system') ||
+      inferredType === 'create_lore' ||
+      inferredType === 'add_lore' ||
+      Boolean(action.rules);
+
+    const isFactionIntent =
+      userLower.includes('faction') ||
+      inferredType === 'create_faction' ||
+      Boolean(action.leader || action.beliefs);
+
+    const isCharacterIntent = 
+      userLower.includes('character') || 
+      rawLower.includes('quick-start profile') ||
+      Boolean(action.name && !action.landmarks && !action.culture && !action.rules) ||
+      Boolean(action.role || action.personality || action.goals || action.appearance);
+
+    const isLocationIntent = 
+      userLower.includes('location') || 
+      Boolean(action.name && (action.landmarks || action.culture)) ||
+      Boolean(action.description && action.landmarks);
+
+    const isPlotThreadIntent = 
+      userLower.includes('plot thread') || 
+      userLower.includes('mystery') ||
+      Boolean(action.threadType);
+
+    if (isPowerSystemIntent && inferredType !== 'create_character' && inferredType !== 'create_location') {
+      inferredType = 'create_power_system';
+    } else if (isFactionIntent) {
+      inferredType = 'create_faction';
+    } else if (isCharacterIntent && inferredType !== 'create_location') {
+      inferredType = 'create_character';
+    } else if (isLocationIntent) {
+      inferredType = 'create_location';
+    } else if (isPlotThreadIntent) {
+      inferredType = 'create_plot_thread';
+    }
+
+    if (inferredType === 'create_power_system' || inferredType === 'create_lore') {
+      inferredType = 'create_power_system';
+      if (!action.name || action.name === 'Magic System' || action.name === 'New Magic System') {
+        const nameMatch = rawContent.match(/(?:System Name|Lore Title|Title|Name):\s*\*?\*?([A-Za-z0-9\s\(\)]+)\*?\*?/i) || userPrompt.match(/(?:named|name|lore|history)\s+([A-Za-z0-9\s]+)/i);
+        if (nameMatch) action.name = nameMatch[1].trim();
+        else action.name = 'World History & Lore';
+      }
+      if (!action.rules) {
+        const filteredBody = cleanContent.replace(/^The content you provided will be added[\s\S]*?\n?/i, '').trim();
+        action.rules = filteredBody || userPrompt;
+      }
+    }
+
+    if (inferredType === 'create_character') {
+      if (!action.name || action.name === 'Character Name' || action.name === 'New Character') {
+        const nameMatch = rawContent.match(/(?:Name|Character):\s*\*?\*?([A-Za-z0-9\s]+)\*?\*?/i) || userPrompt.match(/(?:named|name)\s+([A-Z][a-z]+)/i);
+        if (nameMatch) action.name = nameMatch[1].trim();
+      }
+    }
+
+    action.type = inferredType;
+    return action as NormalizedAiAction;
+  };
+
+  const normalizedActions: NormalizedAiAction[] = rawActions.map(normalizeSingleAction);
+
+  // Fallback if no JSON blocks were found at all
+  if (normalizedActions.length === 0) {
+    let fallbackAction: any = null;
     if (userLower.includes('character') && (userLower.includes('add') || userLower.includes('create') || userLower.includes('come up with'))) {
       const nameMatch = userPrompt.match(/(?:named|name|character)\s+([A-Z][a-z]+)/i);
-      action = {
+      fallbackAction = {
         type: 'create_character',
         name: nameMatch ? nameMatch[1] : 'New Character',
         role: 'Supporting',
@@ -63,88 +163,32 @@ export function parseAndNormalizeAiAction(
       };
     } else if (userLower.includes('location') && (userLower.includes('add') || userLower.includes('create'))) {
       const nameMatch = userPrompt.match(/(?:named|name|location)\s+([A-Z][a-z]+)/i);
-      action = {
+      fallbackAction = {
         type: 'create_location',
         name: nameMatch ? nameMatch[1] : 'New Location',
         description: 'Extracted from AI chat response'
       };
+    } else if (
+      (userLower.includes('lore') || userLower.includes('history') || userLower.includes('magic') || userLower.includes('power system') || userLower.includes('world history')) &&
+      (userLower.includes('add') || userLower.includes('create') || userLower.includes('bible') || userLower.includes('lore bible'))
+    ) {
+      const nameMatch = userPrompt.match(/(?:add these things to the lore bible:|lore bible:|world history|named|name)\s*\*?\*?([A-Za-z0-9\s]+?)(?:\*?\*?\n|$|\()/i);
+      const filteredBody = cleanContent.replace(/^The content you provided will be added[\s\S]*?\n?/i, '').trim();
+      fallbackAction = {
+        type: 'create_power_system',
+        name: nameMatch && nameMatch[1].trim().length > 2 ? nameMatch[1].trim() : 'World History & Lore',
+        rules: filteredBody || userPrompt
+      };
+    }
+
+    if (fallbackAction) {
+      normalizedActions.push(normalizeSingleAction(fallbackAction));
     }
   }
 
-  if (!action || typeof action !== 'object') {
-    return { cleanContent, action: null };
-  }
-
-  // Smart Type Correction / Normalization
-  let inferredType = String(action.type || '').toLowerCase();
-
-  const isCharacterIntent = 
-    userLower.includes('character') || 
-    rawLower.includes('quick-start profile') ||
-    Boolean(action.name && !action.landmarks && !action.culture) ||
-    Boolean(action.role || action.personality || action.goals || action.appearance);
-
-  const isLocationIntent = 
-    userLower.includes('location') || 
-    Boolean(action.name && (action.landmarks || action.culture)) ||
-    Boolean(action.description && action.landmarks);
-
-  const isPlotThreadIntent = 
-    userLower.includes('plot thread') || 
-    userLower.includes('mystery') ||
-    Boolean(action.threadType);
-
-  if (isCharacterIntent && inferredType !== 'create_location') {
-    inferredType = 'create_character';
-  } else if (isLocationIntent) {
-    inferredType = 'create_location';
-  } else if (isPlotThreadIntent) {
-    inferredType = 'create_plot_thread';
-  }
-
-  // If character creation is detected, extract character fields from assistant markdown if missing
-  if (inferredType === 'create_character') {
-    if (!action.name || action.name === 'Character Name' || action.name === 'New Character') {
-      const nameMatch = rawContent.match(/(?:Name|Character):\s*\*?\*?([A-Za-z0-9\s]+)\*?\*?/i) || userPrompt.match(/(?:named|name)\s+([A-Z][a-z]+)/i);
-      if (nameMatch) action.name = nameMatch[1].trim();
-    }
-    if (!action.age) {
-      const ageMatch = rawContent.match(/(?:Age|Years old):\s*\*?\*?([A-Za-z0-9\s]+)\*?\*?/i) || userPrompt.match(/(\d+)\s*(?:years old|year old|yo)/i);
-      if (ageMatch) {
-        const val = ageMatch[1].trim();
-        action.age = /^\d+$/.test(val) ? `${val} years old` : val;
-      }
-    }
-    if (!action.role || action.role.includes('Protagonist / Antagonist')) {
-      const roleMatch = rawContent.match(/Role:\s*\*?\*?([A-Za-z0-9\s\(\)]+)\*?\*?/i);
-      if (roleMatch) action.role = roleMatch[1].trim();
-    }
-    if (!action.personality) {
-      const traitMatch = rawContent.match(/Personality:\s*\*?\*?([^\n]+)/i);
-      if (traitMatch) action.personality = traitMatch[1].trim();
-    }
-    if (!action.history) {
-      const historyMatch = rawContent.match(/(?:History|Backstory|Background):\s*\*?\*?([^\n]+(?:\n[^\n]+){0,3})/i);
-      if (historyMatch) {
-        action.history = historyMatch[1].trim();
-      } else {
-        // Fallback: use main assistant body paragraphs as backstory/history
-        const paragraphs = cleanContent.split('\n\n').filter(p => !p.startsWith('#') && !p.startsWith('-') && p.length > 40);
-        if (paragraphs.length > 0) {
-          action.history = paragraphs.join('\n\n');
-        }
-      }
-    }
-    if (!action.secrets) {
-      const secretsMatch = rawContent.match(/(?:Secrets|Secret|Pact|Hidden):\s*\*?\*?([^\n]+(?:\n[^\n]+){0,2})/i);
-      if (secretsMatch) action.secrets = secretsMatch[1].trim();
-    }
-    if (!action.appearance) {
-      const appMatch = rawContent.match(/(?:Appearance|Physically|Look):\s*\*?\*?([^\n]+(?:\n[^\n]+){0,2})/i);
-      if (appMatch) action.appearance = appMatch[1].trim();
-    }
-  }
-
-  action.type = inferredType;
-  return { cleanContent, action: action as NormalizedAiAction };
+  return {
+    cleanContent,
+    action: normalizedActions.length > 0 ? normalizedActions[0] : null,
+    actions: normalizedActions
+  };
 }
