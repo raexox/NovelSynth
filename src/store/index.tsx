@@ -345,6 +345,54 @@ export const StoreProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     const type = String(action.type || '').toLowerCase();
 
     try {
+      if (type === 'replace_line' || type === 'line_edit') {
+        const targetSceneId = activeSceneId || (project.scenes[0] ? project.scenes[0].id : null);
+        if (!targetSceneId) {
+          notify({ tone: 'warning', title: 'No active scene', message: 'Select a scene to apply targeted line edits.' });
+          return false;
+        }
+        const scene = project.scenes.find(s => s.id === targetSceneId);
+        if (!scene) return false;
+
+        let content = scene.content;
+        let appliedCount = 0;
+
+        const editsList = Array.isArray(action.edits) && action.edits.length > 0 
+          ? action.edits 
+          : (action.targetText && action.replacementText ? [{ targetText: action.targetText, replacementText: action.replacementText }] : []);
+
+        if (editsList.length === 0) {
+          notify({ tone: 'warning', title: 'Invalid edit block', message: 'No target lines provided for replacement.' });
+          return false;
+        }
+
+        editsList.forEach((edit: any) => {
+          const tText = String(edit.targetText || '').trim();
+          const rText = String(edit.replacementText || '').trim();
+          if (tText && content.includes(tText)) {
+            content = content.replace(tText, rText);
+            appliedCount++;
+          }
+        });
+
+        if (appliedCount > 0) {
+          updateSceneContent(targetSceneId, content);
+          notify({
+            tone: 'success',
+            title: 'Line edits applied!',
+            message: `Successfully updated ${appliedCount} line(s) in "${scene.title}".`
+          });
+          return true;
+        } else {
+          notify({
+            tone: 'warning',
+            title: 'Lines not found',
+            message: 'Could not find matching target lines in the current scene to replace.'
+          });
+          return false;
+        }
+      }
+
       if (type === 'create_character' || type === 'add_character') {
         const charName = action.name || 'New Character';
         await addBibleItem('characters', {

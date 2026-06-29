@@ -95,6 +95,12 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
     applyLabel = '⚡ Click to Save Note';
     appliedLabel = '✓ Saved to Scrapbook';
     icon = <FileText size={13} />;
+  } else if (actionType === 'replace_line' || actionType === 'line_edit') {
+    title = 'Targeted Line Improvement';
+    badgeLabel = 'Manuscript Edit';
+    applyLabel = '⚡ Click to Apply Line Edits';
+    appliedLabel = '✓ Applied to Scene';
+    icon = <FileText size={13} />;
   } else {
     title = 'Proposed Outline Update';
     badgeLabel = action.targetScene || 'Scene';
@@ -258,6 +264,25 @@ export const AiActionCard: React.FC<AiActionCardProps> = ({ action }) => {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Targeted Line Edits */}
+        {(actionType === 'replace_line' || actionType === 'line_edit') && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: 11.5 }}>
+            {(Array.isArray((action as any).edits) && (action as any).edits.length > 0
+              ? (action as any).edits
+              : (action.targetText && action.replacementText ? [{ targetText: action.targetText, replacementText: action.replacementText }] : [])
+            ).map((edit: any, idx: number) => (
+              <div key={idx} style={{ backgroundColor: 'rgba(0,0,0,0.25)', padding: '6px 8px', borderRadius: 6, display: 'flex', flexDirection: 'column', gap: 4, borderLeft: '3px solid var(--accent-purple)' }}>
+                <div style={{ color: '#ef4444', textDecoration: 'line-through', opacity: 0.85, fontSize: 11 }}>
+                  - {edit.targetText}
+                </div>
+                <div style={{ color: '#10b981', fontWeight: 600, fontSize: 11.5 }}>
+                  + {edit.replacementText}
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>

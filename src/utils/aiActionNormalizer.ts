@@ -5,8 +5,11 @@
  */
 
 export interface NormalizedAiAction {
-  type: 'create_character' | 'create_location' | 'create_faction' | 'create_power_system' | 'create_lore' | 'create_plot_thread' | 'add_note' | 'update_scene_outline';
+  type: 'create_character' | 'create_location' | 'create_faction' | 'create_power_system' | 'create_lore' | 'create_plot_thread' | 'add_note' | 'update_scene_outline' | 'replace_line' | 'line_edit';
   targetScene?: string;
+  targetText?: string;
+  replacementText?: string;
+  edits?: Array<{ targetText: string; replacementText: string }>;
   summary?: string;
   addBeats?: string[];
   location?: string;
@@ -84,6 +87,12 @@ export function parseAndNormalizeAiAction(
 
     const actionText = `${action.name || ''} ${action.description || ''} ${action.rules || ''} ${action.history || ''}`.toLowerCase();
     
+    const isLineEditIntent =
+      inferredType === 'replace_line' ||
+      inferredType === 'line_edit' ||
+      Boolean(action.targetText && action.replacementText) ||
+      Boolean(Array.isArray(action.edits) && action.edits.length > 0);
+
     const isExplicitMagicContent = 
       actionText.includes('magic system') ||
       actionText.includes('power system') ||
@@ -134,8 +143,9 @@ export function parseAndNormalizeAiAction(
       userLower.includes('mystery') ||
       Boolean(action.threadType);
 
-    if (isExplicitMagicContent) {
-      inferredType = 'create_power_system';
+    if (isLineEditIntent) {
+      inferredType = 'replace_line';
+    } else if (isExplicitMagicContent) {
     } else if (isLoreIntent && inferredType !== 'create_character' && inferredType !== 'create_location') {
       inferredType = 'create_lore';
     } else if (isPowerSystemIntent && inferredType !== 'create_character' && inferredType !== 'create_location') {
